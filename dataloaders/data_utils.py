@@ -10,7 +10,7 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 def get_unk_mask_indices(image,testing,num_labels,known_labels,epoch=1):
     if testing:
         # for consistency across epochs and experiments, seed using hashed image array 
-        random.seed(hashlib.sha1(np.array(image)).hexdigest())
+        random.seed(hashlib.sha1(np.ascontiguousarray(image)).hexdigest())
         unk_mask_indices = random.sample(range(num_labels), (num_labels-int(known_labels)))
     else:
         # sample random number of known labels during training

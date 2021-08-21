@@ -11,7 +11,7 @@ from .position_enc import PositionEmbeddingSine,positionalencoding2d
 
  
 class CTranModel(nn.Module):
-    def __init__(self,num_labels,use_lmt,pos_emb=False,layers=3,heads=4,dropout=0.1,int_loss=0,no_x_features=False):
+    def __init__(self,num_labels,use_lmt,device,pos_emb=False,layers=3,heads=4,dropout=0.1,int_loss=0,no_x_features=False):
         super(CTranModel, self).__init__()
         self.use_lmt = use_lmt
         
@@ -56,9 +56,11 @@ class CTranModel(nn.Module):
         self.self_attn_layers.apply(weights_init)
         self.output_linear.apply(weights_init)
 
+        #device
+        self.device = device
 
     def forward(self,images,mask):
-        const_label_input = self.label_input.repeat(images.size(0),1).cuda()
+        const_label_input = self.label_input.repeat(images.size(0),1).to(self.device)
         init_label_embeddings = self.label_lt(const_label_input)
 
         features = self.backbone(images)
@@ -66,7 +68,7 @@ class CTranModel(nn.Module):
         if self.downsample:
             features = self.conv_downsample(features)
         if self.use_pos_enc:
-            pos_encoding = self.position_encoding(features,torch.zeros(features.size(0),18,18, dtype=torch.bool).cuda())
+            pos_encoding = self.position_encoding(features,torch.zeros(features.size(0),18,18, dtype=torch.bool).to(self.device))
             features = features + pos_encoding
 
         features = features.view(features.size(0),features.size(1),-1).permute(0,2,1) 
@@ -97,7 +99,7 @@ class CTranModel(nn.Module):
         # Readout each label embedding using a linear layer
         label_embeddings = embeddings[:,-init_label_embeddings.size(1):,:]
         output = self.output_linear(label_embeddings) 
-        diag_mask = torch.eye(output.size(1)).unsqueeze(0).repeat(output.size(0),1,1).cuda()
+        diag_mask = torch.eye(output.size(1)).unsqueeze(0).repeat(output.size(0),1,1).to(self.device)
         output = (output*diag_mask).sum(-1)
 
         return output,None,attns
