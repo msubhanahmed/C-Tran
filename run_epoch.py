@@ -6,7 +6,7 @@ from models.utils import custom_replace
 import random
 
 
-def run_epoch(args,model,data,optimizer,epoch,desc,train=False,warmup_scheduler=None):
+def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_scheduler=None):
     if train:
         model.train()
         optimizer.zero_grad()
@@ -28,7 +28,7 @@ def run_epoch(args,model,data,optimizer,epoch,desc,train=False,warmup_scheduler=
     for batch in tqdm(data,mininterval=0.5,desc=desc,leave=False,ncols=50):
         if batch_idx == max_samples:
             break
-
+        
         labels = batch['labels'].float()
         images = batch['image'].float()
         mask = batch['mask'].float()
@@ -36,12 +36,12 @@ def run_epoch(args,model,data,optimizer,epoch,desc,train=False,warmup_scheduler=
         all_image_ids += batch['imageIDs']
         
         mask_in = mask.clone()
-
+        
         if train:
-            pred,int_pred,attns = model(images.cuda(),mask_in.cuda())
+            pred,int_pred,attns = model(images.to(device),mask_in.to(device))
         else:
             with torch.no_grad():
-                pred,int_pred,attns = model(images.cuda(),mask_in.cuda())
+                pred,int_pred,attns = model(images.to(device),mask_in.to(device))
 
         if args.dataset == 'cub':
             class_label = batch['class_label'].float()
@@ -51,26 +51,26 @@ def run_epoch(args,model,data,optimizer,epoch,desc,train=False,warmup_scheduler=
             class_label_onehot.scatter_(1,class_label.long(),1)
 
             labels = torch.cat((labels,class_label_onehot),1)
-            loss =  F.binary_cross_entropy_with_logits(pred.view(labels.size(0),-1),labels.cuda(),reduction='none')
-            loss = (unk_mask.cuda()*loss).sum()/unk_mask.detach().sum().item()
+            loss =  F.binary_cross_entropy_with_logits(pred.view(labels.size(0),-1),labels.to(device),reduction='none')
+            loss = (unk_mask.to(device)*loss).sum()/unk_mask.detach().sum().item()
 
-            aux_loss =  F.binary_cross_entropy_with_logits(int_pred.view(labels.size(0),-1),labels.cuda(),reduction='none')
-            aux_loss = (unk_mask.cuda()*aux_loss).sum()/unk_mask.detach().sum().item()
+            aux_loss =  F.binary_cross_entropy_with_logits(int_pred.view(labels.size(0),-1),labels.to(device),reduction='none')
+            aux_loss = (unk_mask.to(device)*aux_loss).sum()/unk_mask.detach().sum().item()
 
             loss_out = 1.0*loss + float(args.aux_loss)*aux_loss
             loss = loss_out
 
         else:
-            loss =  F.binary_cross_entropy_with_logits(pred.view(labels.size(0),-1),labels.cuda(),reduction='none')
-
+            loss =  F.binary_cross_entropy_with_logits(pred.view(labels.size(0),-1),labels.to(device),reduction='none')
+            
             if args.loss_labels == 'unk': 
                 # only use unknown labels for loss
-                loss_out = (unk_mask.cuda()*loss).sum()
+                loss_out = (unk_mask.to(device)*loss).sum()
             else: 
                 # use all labels for loss
                 loss_out = loss.sum() 
 
-            # loss_out = loss_out/unk_mask.cuda().sum()
+            # loss_out = loss_out/unk_mask.to(device).sum()
 
         if train:
             loss_out.backward()

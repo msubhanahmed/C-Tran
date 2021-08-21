@@ -5,12 +5,20 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from pdb import set_trace as stop
 import os, random
+import albumentations as ab
+import albumentations.pytorch as abp
+
 from dataloaders.voc2007_20 import Voc07Dataset
 from dataloaders.vg500_dataset import VGDataset
 from dataloaders.coco80_dataset import Coco80Dataset
 from dataloaders.news500_dataset import NewsDataset
-from dataloaders.coco1000_dataset import Coco1000Dataset
+from dataloaders.coco1000_dataset import Coco1000Dataset                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
 from dataloaders.cub312_dataset import CUBDataset
+from dataloaders.rfmid_dataset import RFMiDDataset
+
+#from datasamplers.stratified_sampler import StratifiedBatchSampler
+from wrappers.transforms import Transforms as tw
+
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -26,7 +34,7 @@ def get_data(args):
     workers=args.workers
     n_groups=args.n_groups
 
-    normTransform = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    normTransform = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])                                                                                             
     scale_size = rescale
     crop_size = random_crop
     if args.test_batch_size == -1:
@@ -175,16 +183,41 @@ def get_data(args):
         train_dataset = CUBDataset(image_dir, train_list, trainTransform,known_labels=args.train_known_labels,attr_group_dict=attr_group_dict,testing=False,n_groups=n_groups)
         valid_dataset = CUBDataset(image_dir, valid_list, testTransform,known_labels=args.test_known_labels,attr_group_dict=attr_group_dict,testing=True,n_groups=n_groups)
         test_dataset = CUBDataset(image_dir, test_list, testTransform,known_labels=args.test_known_labels,attr_group_dict=attr_group_dict,testing=True,n_groups=n_groups)
-        
+    
+    elif dataset == 'rfmid':
+        IMG_SIZE = 384
+
+        image_train_dir = os.path.join(data_root, 'Training_Set_Crop/Training')
+        image_val_dir = os.path.join(data_root, 'Evaluation_Set_Crop/Evaluation')
+
+        train_list = os.path.join(data_root, 'Training_Set_Crop/RFMiD_Training_Labels_28.csv')
+        val_list = os.path.join(data_root, 'Evaluation_Set_Crop/RFMiD_Validation_Labels.csv')
+
+        transform_train = tw(ab.Compose([
+            ab.Resize(IMG_SIZE, IMG_SIZE), 
+            ab.HorizontalFlip(), # Same with transforms.RandomHorizontalFlip()
+            ab.Rotate(limit=30),
+            ab.Normalize(),
+            abp.transforms.ToTensorV2(),
+        ]))
+
+        transform_val = tw(ab.Compose([
+            ab.Resize(IMG_SIZE, IMG_SIZE), 
+            ab.Normalize(),
+            abp.transforms.ToTensorV2(),
+        ]))
+
+        train_dataset = RFMiDDataset(image_train_dir, train_list, transform_train, known_labels=args.train_known_labels,testing=False)
+        valid_dataset = RFMiDDataset(image_val_dir, val_list, transform_val, known_labels=args.test_known_labels,testing=True)
     else:
         print('no dataset avail')
         exit(0)
-
+    
     if train_dataset is not None:
         train_loader = DataLoader(train_dataset, batch_size=batch_size,shuffle=True, num_workers=workers,drop_last=drop_last)
     if valid_dataset is not None:
         valid_loader = DataLoader(valid_dataset, batch_size=args.test_batch_size,shuffle=False, num_workers=workers)
     if test_dataset is not None:
         test_loader = DataLoader(test_dataset, batch_size=args.test_batch_size,shuffle=False, num_workers=workers)
-
+        
     return train_loader,valid_loader,test_loader

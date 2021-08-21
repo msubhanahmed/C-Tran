@@ -19,12 +19,13 @@ print('Train Known: {}'.format(args.train_known_labels))
 print('Test Known:  {}'.format(args.test_known_labels))
 
 train_loader,valid_loader,test_loader = get_data(args)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 if args.dataset == 'cub':
     model = CTranModelCub(args.num_labels,args.use_lmt,args.pos_emb,args.layers,args.heads,args.dropout,args.no_x_features)
     print(model.self_attn_layers)
 else:
-    model = CTranModel(args.num_labels,args.use_lmt,args.pos_emb,args.layers,args.heads,args.dropout,args.no_x_features)
+    model = CTranModel(args.num_labels,args.use_lmt, device, args.pos_emb,args.layers,args.heads,args.dropout,args.no_x_features)
     print(model.self_attn_layers)
 
 
@@ -38,7 +39,8 @@ print(args.model_name)
 if torch.cuda.device_count() > 1:
     print("Using", torch.cuda.device_count(), "GPUs!")
     model = nn.DataParallel(model)
-model = model.cuda()
+    
+model = model.to(device)
 
 if args.inference:
     model = load_saved_model(args.saved_model_name,model)
@@ -47,7 +49,7 @@ if args.inference:
     else:
         data_loader =valid_loader
     
-    all_preds,all_targs,all_masks,all_ids,test_loss,test_loss_unk = run_epoch(args,model,data_loader,None,1,'Testing')
+    all_preds,all_targs,all_masks,all_ids,test_loss,test_loss_unk = run_epoch(args,model,data_loader,None,1,'Testing', device)
     test_metrics = evaluate.compute_metrics(args,all_preds,all_targs,all_masks,test_loss,test_loss_unk,0,args.test_known_labels)
 
     exit(0)
@@ -85,18 +87,18 @@ for epoch in range(1,args.epochs+1):
 
     train_loader.dataset.epoch = epoch
     ################### Train #################
-    all_preds,all_targs,all_masks,all_ids,train_loss,train_loss_unk = run_epoch(args,model,train_loader,optimizer,epoch,'Training',train=True,warmup_scheduler=scheduler_warmup)
+    all_preds,all_targs,all_masks,all_ids,train_loss,train_loss_unk = run_epoch(args,model,train_loader,optimizer,epoch,'Training',device,train=True,warmup_scheduler=scheduler_warmup)
     train_metrics = evaluate.compute_metrics(args,all_preds,all_targs,all_masks,train_loss,train_loss_unk,0,args.train_known_labels)
     loss_logger.log_losses('train.log',epoch,train_loss,train_metrics,train_loss_unk)
 
     ################### Valid #################
-    all_preds,all_targs,all_masks,all_ids,valid_loss,valid_loss_unk = run_epoch(args,model,valid_loader,None,epoch,'Validating')
+    all_preds,all_targs,all_masks,all_ids,valid_loss,valid_loss_unk = run_epoch(args,model,valid_loader,None,epoch,'Validating',device)
     valid_metrics = evaluate.compute_metrics(args,all_preds,all_targs,all_masks,valid_loss,valid_loss_unk,0,args.test_known_labels)
     loss_logger.log_losses('valid.log',epoch,valid_loss,valid_metrics,valid_loss_unk)
 
     ################### Test #################
     if test_loader is not None:
-        all_preds,all_targs,all_masks,all_ids,test_loss,test_loss_unk = run_epoch(args,model,test_loader,None,epoch,'Testing')
+        all_preds,all_targs,all_masks,all_ids,test_loss,test_loss_unk = run_epoch(args,model,test_loader,None,epoch,'Testing',device)
         test_metrics = evaluate.compute_metrics(args,all_preds,all_targs,all_masks,test_loss,test_loss_unk,0,args.test_known_labels)
     else:
         test_loss,test_loss_unk,test_metrics = valid_loss,valid_loss_unk,valid_metrics
