@@ -45,6 +45,7 @@ def compute_metrics(args,all_predictions,all_targets,all_masks,loss,loss_unk,ela
 
     if known_labels > 0:
         meanAP = custom_mean_avg_precision(all_targets,all_predictions,unknown_label_mask)
+        auc_score = 0.0
     else:
         meanAP = metrics.average_precision_score(all_targets,all_predictions, average='macro', pos_label=1)
         auc_score = metrics.roc_auc_score(all_targets, all_predictions)
@@ -102,8 +103,9 @@ def compute_metrics(args,all_predictions,all_targets,all_masks,loss,loss_unk,ela
         print('loss:  {:0.3f}'.format(loss))
         print('lossu: {:0.3f}'.format(loss_unk))
         print('----')
-        print('mAP:   {:0.1f}'.format(meanAP*100))
-        print('AUC:   {:0.1f}'.format(auc_score*100))
+        print('mAP:   {:0.3f}'.format(meanAP*100))
+        print('AUC:   {:0.3f}'.format(auc_score*100))
+        print('MDS:   {:0.3f}'.format((meanAP + auc_score) * 100 / 2.0))
         print('----')
         print('CP:    {:0.1f}'.format(CP*100))
         print('CR:    {:0.1f}'.format(CR*100))
@@ -123,6 +125,7 @@ def compute_metrics(args,all_predictions,all_targets,all_masks,loss,loss_unk,ela
     metrics_dict = {}
     metrics_dict['mAP'] = meanAP
     metrics_dict['AUC'] = auc_score
+    metrics_dict['MDS'] = (meanAP + auc_score) / 2.0
     metrics_dict['ACC'] = ACC
     metrics_dict['HA'] = HA
     metrics_dict['ebF1'] = ebF1

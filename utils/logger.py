@@ -30,6 +30,7 @@ class Logger:
     def __init__(self,args):
         self.model_name = args.model_name
         self.best_mAP = 0
+        self.best_MDS = 0
         self.best_class_acc = 0
 
         if args.model_name:
@@ -109,12 +110,12 @@ class Logger:
 
         else:
 
-            if valid_metrics['mAP'] >= self.best_mAP:
-                self.best_mAP = valid_metrics['mAP']
+            if valid_metrics['MDS'] >= self.best_MDS:
+                self.best_MDS = valid_metrics['MDS']
                 self.best_test['epoch'] = epoch
 
                 for metric in valid_metrics.keys():
-                    if not 'all' in metric and not 'time'in metric:
+                    if not 'all' in metric and not 'time' in metric:
                         self.best_valid[metric]= valid_metrics[metric]
                         self.best_test[metric]= test_metrics[metric]    
 
@@ -124,6 +125,8 @@ class Logger:
                     'state_dict': model.state_dict(),
                     'valid_mAP': valid_metrics['mAP'],
                     'test_mAP': test_metrics['mAP'],
+                    'valid_MDS': valid_metrics['MDS'],
+                    'test_MDS': test_metrics['MDS'],
                     'valid_loss': valid_loss,
                     'test_loss': test_loss
                     }
@@ -133,6 +136,8 @@ class Logger:
             print('\n')
             print('**********************************')
             print('best mAP:  {:0.1f}'.format(self.best_test['mAP']*100))
+            print('best AUC:  {:0.1f}'.format(self.best_test['AUC']*100))
+            print('best MDS:  {:0.1f}'.format(self.best_test['MDS']*100))
             print('best CF1:  {:0.1f}'.format(self.best_test['CF1']*100))
             print('best OF1:  {:0.1f}'.format(self.best_test['OF1']*100))
             print('**********************************')
