@@ -185,7 +185,7 @@ def get_data(args):
         test_dataset = CUBDataset(image_dir, test_list, testTransform,known_labels=args.test_known_labels,attr_group_dict=attr_group_dict,testing=True,n_groups=n_groups)
     
     elif dataset == 'rfmid':
-        IMG_SIZE = 384
+        IMG_SIZE = 608
 
         image_train_dir = os.path.join(data_root, 'Training_Set_Crop/Training')
         image_val_dir = os.path.join(data_root, 'Evaluation_Set_Crop/Evaluation')
@@ -194,11 +194,21 @@ def get_data(args):
         val_list = os.path.join(data_root, 'Evaluation_Set_Crop/RFMiD_Validation_Labels.csv')
 
         transform_train = tw(ab.Compose([
-            ab.Resize(IMG_SIZE, IMG_SIZE), 
-            ab.HorizontalFlip(), # Same with transforms.RandomHorizontalFlip()
-            ab.Rotate(limit=30),
-            ab.Normalize(),
-            abp.transforms.ToTensorV2(),
+        #albumentations.RandomResizedCrop(image_size, image_size, scale=(0.85, 1), p=1), 
+        ab.Resize(IMG_SIZE, IMG_SIZE), 
+        ab.HorizontalFlip(p=0.5),
+        ab.VerticalFlip(p=0.5),
+        ab.Rotate(limit=30),
+        ab.MedianBlur(blur_limit = 7, p=0.3),
+        ab.GaussNoise(var_limit=(0,0.15*255), p = 0.5),
+        ab.HueSaturationValue(hue_shift_limit=10, sat_shift_limit=10, val_shift_limit=10, p=0.3),
+        ab.RandomBrightnessContrast(brightness_limit=(-0.2,0.2), contrast_limit=(-0.2, 0.2), p=0.3),
+        ab.Cutout(max_h_size=20, max_w_size=20, num_holes=5, p=0.5),
+        ab.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225],
+        ),
+        abp.transforms.ToTensorV2(),
         ]))
 
         transform_val = tw(ab.Compose([

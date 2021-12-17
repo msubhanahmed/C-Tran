@@ -1,4 +1,5 @@
-import argparse,math,time,warnings,copy, numpy as np, os.path as path 
+import argparse,math,time,warnings,copy, numpy as np, os.path as path
+from utils.assymetric_loss_opt import AsymmetricLossOptimized 
 import torch, torch.nn as nn, torch.nn.functional as F
 from pdb import set_trace as stop
 from tqdm import tqdm
@@ -24,6 +25,8 @@ def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_sch
     batch_idx = 0
     loss_total = 0
     unk_loss_total = 0
+
+    criterion = AsymmetricLossOptimized(gamma_neg=2, gamma_pos=1, clip=0)
 
     for batch in tqdm(data,mininterval=0.5,desc=desc,leave=False,ncols=50):
         if batch_idx == max_samples:
@@ -61,7 +64,7 @@ def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_sch
             loss = loss_out
 
         else:
-            loss =  F.binary_cross_entropy_with_logits(pred.view(labels.size(0),-1),labels.to(device),reduction='none')
+            loss =  criterion(pred.view(labels.size(0),-1),labels.to(device))
             
             if args.loss_labels == 'unk': 
                 # only use unknown labels for loss
