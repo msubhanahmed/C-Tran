@@ -1,20 +1,24 @@
 import torch
 from skimage import io, transform
 import numpy as np
+import pandas as pd
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from pdb import set_trace as stop
 import os, random
 import albumentations as ab
 import albumentations.pytorch as abp
+from dataloaders.merged_dataset import MergedDataset
+from iterstrat.ml_stratifiers import MultilabelStratifiedKFold
 
 from dataloaders.voc2007_20 import Voc07Dataset
 from dataloaders.vg500_dataset import VGDataset
 from dataloaders.coco80_dataset import Coco80Dataset
 from dataloaders.news500_dataset import NewsDataset
-from dataloaders.coco1000_dataset import Coco1000Dataset                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+from dataloaders.coco1000_dataset import Coco1000Dataset          
 from dataloaders.cub312_dataset import CUBDataset
 from dataloaders.rfmid_dataset import RFMiDDataset
+from dataloaders.merged_dataset import MergedDataset
 
 #from datasamplers.stratified_sampler import StratifiedBatchSampler
 from wrappers.transforms import Transforms as tw
@@ -219,15 +223,64 @@ def get_data(args):
 
         train_dataset = RFMiDDataset(image_train_dir, train_list, transform_train, known_labels=args.train_known_labels,testing=False)
         valid_dataset = RFMiDDataset(image_val_dir, val_list, transform_val, known_labels=args.test_known_labels,testing=True)
+
+    elif dataset == 'merged':
+        IMG_SIZE = 200
+
+        data_root_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets'
+        
+        labels_path = os.path.join(data_root_path, 'drop_all\\20_labels\\merged_20_labels_drop_10.0_perc.csv')
+
+        aria_img_path = os.path.join(data_root_path, 'ARIA\\all_images_crop')
+        stare_img_path = os.path.join(data_root_path, 'STARE\\all_images_crop')
+        rfmid_img_path = os.path.join(data_root_path, 'RIADD_cropped\\Training_Set\\Training')
+
+        imgs_path = [aria_img_path, stare_img_path, rfmid_img_path]
+
+        data = pd.read_csv(labels_path)
+
+        folds = MultilabelStratifiedKFold(n_splits=5, shuffle=True,random_state=42)
+        for (train_idx, val_idx) in folds.split(data, data.iloc[:, 4:]):
+            train_data = data.iloc[train_idx, :].reset_index(drop=True)
+            val_data = data.iloc[val_idx, :].reset_index(drop=True)
+            break
+
+
+        transform_train = tw(ab.Compose([
+        #albumentations.RandomResizedCrop(image_size, image_size, scale=(0.85, 1), p=1), 
+        ab.Resize(IMG_SIZE, IMG_SIZE), 
+        ab.HorizontalFlip(p=0.5),
+        ab.VerticalFlip(p=0.5),
+        ab.Rotate(limit=30),
+        ab.MedianBlur(blur_limit = 7, p=0.3),
+        ab.GaussNoise(var_limit=(0,0.15*255), p = 0.5),
+        ab.HueSaturationValue(hue_shift_limit=10, sat_shift_limit=10, val_shift_limit=10, p=0.3),
+        ab.RandomBrightnessContrast(brightness_limit=(-0.2,0.2), contrast_limit=(-0.2, 0.2), p=0.3),
+        ab.Cutout(max_h_size=20, max_w_size=20, num_holes=5, p=0.5),
+        ab.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225],
+        ),
+        abp.transforms.ToTensorV2(),
+        ]))
+
+        transform_val = tw(ab.Compose([
+            ab.Resize(IMG_SIZE, IMG_SIZE), 
+            ab.Normalize(),
+            abp.transforms.ToTensorV2(),
+        ]))
+
+        train_dataset = MergedDataset(train_data, imgs_path, transform_train, known_labels=args.train_known_labels,testing=False)
+        valid_dataset = MergedDataset(val_data, imgs_path, transform_val, known_labels=args.test_known_labels,testing=True)
     else:
         print('no dataset avail')
         exit(0)
     
     if train_dataset is not None:
-        train_loader = DataLoader(train_dataset, batch_size=batch_size,shuffle=True, num_workers=workers,drop_last=drop_last)
+        train_loader = DataLoader(train_dataset, batch_size=batch_size,shuffle=True, num_workers=workers,drop_last=drop_last, pin_memory=True)
     if valid_dataset is not None:
-        valid_loader = DataLoader(valid_dataset, batch_size=args.test_batch_size,shuffle=False, num_workers=workers)
+        valid_loader = DataLoader(valid_dataset, batch_size=args.test_batch_size,shuffle=False, num_workers=workers, pin_memory=True)
     if test_dataset is not None:
-        test_loader = DataLoader(test_dataset, batch_size=args.test_batch_size,shuffle=False, num_workers=workers)
+        test_loader = DataLoader(test_dataset, batch_size=args.test_batch_size,shuffle=False, num_workers=workers, pin_memory=True)
         
     return train_loader,valid_loader,test_loader

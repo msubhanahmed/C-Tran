@@ -6,7 +6,7 @@ from pdb import set_trace as stop
 
 def get_args(parser,eval=False):
     parser.add_argument('--dataroot', type=str, default='./data/')
-    parser.add_argument('--dataset', type=str, choices=['coco', 'voc','coco1000','nus','vg','news','cub', 'rfmid'], default='coco')
+    parser.add_argument('--dataset', type=str, choices=['coco', 'voc','coco1000','nus','vg','news','cub', 'rfmid', 'merged'], default='merged')
     parser.add_argument('--workers', type=int, default=10)
     parser.add_argument('--results_dir', type=str, default='results/')
     parser.add_argument('--test_known', type=int, default=0)
@@ -14,8 +14,8 @@ def get_args(parser,eval=False):
     # Optimization
     parser.add_argument('--optim', type=str, choices=['adam', 'sgd'], default='adam')
     parser.add_argument('--lr', type=float, default=0.0002)
-    parser.add_argument('--batch_size', type=int, default=32)
-    parser.add_argument('--test_batch_size', type=int, default=-1)
+    parser.add_argument('--batch_size', type=int, default=8)
+    parser.add_argument('--test_batch_size', type=int, default=8)
     parser.add_argument('--grad_ac_steps', type=int, default=1)
     parser.add_argument('--scheduler_step', type=int, default=1000)
     parser.add_argument('--scheduler_gamma', type=float, default=0.1)
@@ -75,6 +75,8 @@ def get_args(parser,eval=False):
         args.num_labels = 112
     elif args.dataset == 'rfmid':
         args.num_labels = 28
+    elif args.dataset == 'merged':
+        args.num_labels = 20
     else:
         print('dataset not included')
         exit()

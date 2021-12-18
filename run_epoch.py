@@ -31,7 +31,7 @@ def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_sch
     for batch in tqdm(data,mininterval=0.5,desc=desc,leave=False,ncols=50):
         if batch_idx == max_samples:
             break
-        
+
         labels = batch['labels'].float()
         images = batch['image'].float()
         mask = batch['mask'].float()
@@ -45,7 +45,6 @@ def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_sch
         else:
             with torch.no_grad():
                 pred,int_pred,attns = model(images.to(device),mask_in.to(device))
-
         if args.dataset == 'cub':
             class_label = batch['class_label'].float()
             concept_certainty = batch['concept_certainty'].float()
@@ -62,9 +61,8 @@ def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_sch
 
             loss_out = 1.0*loss + float(args.aux_loss)*aux_loss
             loss = loss_out
-
         else:
-            loss =  criterion(pred.view(labels.size(0),-1),labels.to(device))
+            loss = criterion(pred.view(labels.size(0),-1),labels.to(device))
             
             if args.loss_labels == 'unk': 
                 # only use unknown labels for loss
@@ -74,7 +72,6 @@ def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_sch
                 loss_out = loss.sum() 
 
             # loss_out = loss_out/unk_mask.to(device).sum()
-
         if train:
             loss_out.backward()
             # Grad Accumulation
