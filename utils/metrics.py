@@ -77,8 +77,6 @@ def example_f1_score(true_targets, predictions, per_sample=False, axis=0):
     return f1
 
 
-
-
 def f1_score_from_stats(tp, fp, fn, average='micro'):
     assert len(tp) == len(fp)
     assert len(fp) == len(fn)

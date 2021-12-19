@@ -30,7 +30,7 @@ class Logger:
     def __init__(self,args):
         self.model_name = args.model_name
         self.best_mAP = 0
-        self.best_MDS = 0
+        self.best_model_score = 0
         self.best_class_acc = 0
 
         if args.model_name:
@@ -107,11 +107,10 @@ class Logger:
             print('best Concept ACC:  {:0.3f}'.format(self.best_test['concept_acc']))
             print('best Class ACC:  {:0.3f}'.format(self.best_test['class_acc']))
             print('**********************************')
-
         else:
 
-            if valid_metrics['MDS'] >= self.best_MDS:
-                self.best_MDS = valid_metrics['MDS']
+            if valid_metrics['model_score'] >= self.best_model_score:
+                self.best_model_score = valid_metrics['model_score']
                 self.best_test['epoch'] = epoch
 
                 for metric in valid_metrics.keys():
@@ -123,10 +122,10 @@ class Logger:
                 save_dict =  {
                     'epoch': epoch,
                     'state_dict': model.state_dict(),
-                    'valid_mAP': valid_metrics['mAP'],
-                    'test_mAP': test_metrics['mAP'],
-                    'valid_MDS': valid_metrics['MDS'],
-                    'test_MDS': test_metrics['MDS'],
+                    'valid_mAP': valid_metrics['ml_mAP'],
+                    'test_mAP': test_metrics['ml_mAP'],
+                    'valid_model_score': valid_metrics['model_score'],
+                    'test_model_score': test_metrics['model_score'],
                     'valid_loss': valid_loss,
                     'test_loss': test_loss
                     }
@@ -135,9 +134,9 @@ class Logger:
         
             print('\n')
             print('**********************************')
-            print('best mAP:  {:0.1f}'.format(self.best_test['mAP']*100))
-            print('best AUC:  {:0.1f}'.format(self.best_test['AUC']*100))
-            print('best MDS:  {:0.1f}'.format(self.best_test['MDS']*100))
+            print('best mAP:  {:0.1f}'.format(self.best_test['ml_mAP']*100))
+            print('best AUC:  {:0.1f}'.format(self.best_test['ml_auc']*100))
+            print('best ML_Score:  {:0.1f}'.format(self.best_test['ml_score']*100))
             print('best CF1:  {:0.1f}'.format(self.best_test['CF1']*100))
             print('best OF1:  {:0.1f}'.format(self.best_test['OF1']*100))
             print('**********************************')

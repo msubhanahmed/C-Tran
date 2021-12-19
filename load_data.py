@@ -225,15 +225,15 @@ def get_data(args):
         valid_dataset = RFMiDDataset(image_val_dir, val_list, transform_val, known_labels=args.test_known_labels,testing=True)
 
     elif dataset == 'merged':
-        IMG_SIZE = 200
+        IMG_SIZE = 600
 
-        data_root_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets'
+        #data_root_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets'
         
-        labels_path = os.path.join(data_root_path, 'drop_all\\20_labels\\merged_20_labels_drop_10.0_perc.csv')
+        labels_path = os.path.join(data_root, 'merged_20_labels_drop_10.0_perc.csv')
 
-        aria_img_path = os.path.join(data_root_path, 'ARIA\\all_images_crop')
-        stare_img_path = os.path.join(data_root_path, 'STARE\\all_images_crop')
-        rfmid_img_path = os.path.join(data_root_path, 'RIADD_cropped\\Training_Set\\Training')
+        aria_img_path = os.path.join(data_root, 'ARIA/all_images_crop')
+        stare_img_path = os.path.join(data_root, 'STARE/all_images_crop')
+        rfmid_img_path = os.path.join(data_root, 'RFMiD/Training')
 
         imgs_path = [aria_img_path, stare_img_path, rfmid_img_path]
 
