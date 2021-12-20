@@ -19,6 +19,7 @@ from dataloaders.coco1000_dataset import Coco1000Dataset
 from dataloaders.cub312_dataset import CUBDataset
 from dataloaders.rfmid_dataset import RFMiDDataset
 from dataloaders.merged_dataset import MergedDataset
+from resampling import utils as rutils
 
 #from datasamplers.stratified_sampler import StratifiedBatchSampler
 from wrappers.transforms import Transforms as tw
@@ -227,13 +228,19 @@ def get_data(args):
     elif dataset == 'merged':
         IMG_SIZE = 600
 
-        #data_root_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets'
-        
-        labels_path = os.path.join(data_root, 'merged_20_labels_drop_10.0_perc.csv')
+        if args.local_run:
+            data_root = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets'
 
-        aria_img_path = os.path.join(data_root, 'ARIA/all_images_crop')
-        stare_img_path = os.path.join(data_root, 'STARE/all_images_crop')
-        rfmid_img_path = os.path.join(data_root, 'RFMiD/Training')
+            aria_img_path = os.path.join(data_root, 'ARIA\\all_images_crop')
+            stare_img_path = os.path.join(data_root, 'STARE\\all_images_crop')
+            rfmid_img_path = os.path.join(data_root, 'RFMiD\\Training')
+            labels_path = os.path.join(data_root, 'drop_all\\20_labels\\merged_20_labels_drop_10.0_perc.csv')
+        else:
+            aria_img_path = os.path.join(data_root, 'ARIA/all_images_crop')
+            stare_img_path = os.path.join(data_root, 'STARE/all_images_crop')
+            rfmid_img_path = os.path.join(data_root, 'RFMiD/Training')
+            labels_path = os.path.join(data_root, 'merged_20_labels_drop_10.0_perc.csv')
+
 
         imgs_path = [aria_img_path, stare_img_path, rfmid_img_path]
 
@@ -245,6 +252,16 @@ def get_data(args):
             val_data = data.iloc[val_idx, :].reset_index(drop=True)
             break
 
+        # Augment dataset
+        x, y = rutils.resample_dataset(train_data.iloc[:, :4], train_data.iloc[:, 4:], 'ml_ros', args.resample_perc)
+
+        print('original shape')
+        print(train_data.shape)
+
+        train_data = x.join(y)
+
+        print('new shape')
+        print(train_data.shape)
 
         transform_train = tw(ab.Compose([
         #albumentations.RandomResizedCrop(image_size, image_size, scale=(0.85, 1), p=1), 

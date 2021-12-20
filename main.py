@@ -5,6 +5,7 @@ from load_data import get_data
 from models import CTranModel
 from models import CTranModelCub
 from config_args import get_args
+from utils.early_stopping import EarlyStopping
 import utils.evaluate as evaluate
 import utils.logger as logger
 from pdb import set_trace as stop
@@ -78,6 +79,8 @@ if __name__ == '__main__':
         else:
             step_scheduler = None
 
+    early_stopping = EarlyStopping(patience=15, min_delta=1e-4)
+
     metrics_logger = logger.Logger(args)
     loss_logger = logger.LossLogger(args.model_name)
 
@@ -110,6 +113,10 @@ if __name__ == '__main__':
                 step_scheduler.step(epoch)
             elif args.scheduler_type == 'plateau':
                 step_scheduler.step(valid_loss_unk)
+
+        early_stopping(valid_loss_unk)
+        if early_stopping.early_stop:
+            break
 
         ############## Log and Save ##############
         best_valid,best_test = metrics_logger.evaluate(train_metrics,valid_metrics, test_metrics,epoch,0,model,valid_loss,test_loss,all_preds,all_targs,all_ids, args)

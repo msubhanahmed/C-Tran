@@ -11,6 +11,13 @@ def get_args(parser,eval=False):
     parser.add_argument('--results_dir', type=str, default='results/')
     parser.add_argument('--test_known', type=int, default=0)
 
+    # Testing
+    parser.add_argument('--local_run', type=bool, default=False)
+
+
+    # Augmentation
+    parser.add_argument('--resample_perc', type=int, default=0)
+
     # Optimization
     parser.add_argument('--optim', type=str, choices=['adam', 'sgd'], default='adam')
     parser.add_argument('--lr', type=float, default=0.0002)

@@ -22,7 +22,7 @@ class LossLogger:
 
     def log_losses(self,file_name,epoch,loss,metrics,loss_unk=''):
         log_file = open(self.model_name+'/'+file_name,"a")
-        log_file.write(str(epoch)+','+str(loss)+','+str(loss_unk)+','+str(metrics['mAP'])+'\n')
+        log_file.write(str(epoch)+','+str(loss)+','+str(loss_unk)+','+str(metrics['ml_mAP'])+'\n')
         log_file.close()
 
 
@@ -64,10 +64,10 @@ class Logger:
             f = open(self.file_names['test_all_auc'],'w+'); f.close()
             os.utime(args.model_name,None)
         
-        self.best_valid = {'loss':1000000,'mAP':0,'ACC':0,'HA':0,'ebF1':0,'OF1':0,'CF1':0,'meanAUC':0,'medianAUC':0,'meanAUPR':0,'medianAUPR':0,'meanFDR':0,'medianFDR':0,'allAUC':None,'allAUPR':None,
+        self.best_valid = {'loss':1000000,'ml_mAP':0,'ACC':0,'HA':0,'ebF1':0,'OF1':0,'CF1':0,'meanAUC':0,'medianAUC':0,'meanAUPR':0,'medianAUPR':0,'meanFDR':0,'medianFDR':0,'allAUC':None,'allAUPR':None,
         'concept_acc':0,'class_acc':0}
 
-        self.best_test = {'loss':1000000,'mAP':0,'ACC':0,'HA':0,'ebF1':0,'OF1':0,'CF1':0,'meanAUC':0,'medianAUC':0,'meanAUPR':0,'medianAUPR':0,'meanFDR':0,'medianFDR':0,'allAUC':None,'allAUPR':None,'epoch':0,
+        self.best_test = {'loss':1000000,'ml_mAP':0,'ACC':0,'HA':0,'ebF1':0,'OF1':0,'CF1':0,'meanAUC':0,'medianAUC':0,'meanAUPR':0,'medianAUPR':0,'meanFDR':0,'medianFDR':0,'allAUC':None,'allAUPR':None,'epoch':0,
         'concept_acc':0,'class_acc':0}
 
 
