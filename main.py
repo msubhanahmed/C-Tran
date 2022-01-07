@@ -79,7 +79,7 @@ if __name__ == '__main__':
         else:
             step_scheduler = None
 
-    early_stopping = EarlyStopping(patience=15, min_delta=1e-4)
+    early_stopping = EarlyStopping(patience=25, min_delta=1e-4)
 
     metrics_logger = logger.Logger(args)
     loss_logger = logger.LossLogger(args.model_name)

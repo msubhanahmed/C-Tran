@@ -19,6 +19,7 @@ def get_args(parser,eval=False):
     parser.add_argument('--resample_perc', type=int, default=0)
 
     # Optimization
+    parser.add_argument('--loss', type=str, choices=['asl', 'bce'], default='bce')
     parser.add_argument('--optim', type=str, choices=['adam', 'sgd'], default='adam')
     parser.add_argument('--lr', type=float, default=0.0002)
     parser.add_argument('--batch_size', type=int, default=8)
@@ -53,6 +54,7 @@ def get_args(parser,eval=False):
     parser.add_argument('--n_groups', type=int, default=10,help='groups for CUB test time intervention')
     
     # Image Sizes
+    parser.add_argument('--img_size', type=int, default=384)
     parser.add_argument('--scale_size', type=int, default=640)
     parser.add_argument('--crop_size', type=int, default=576)
 

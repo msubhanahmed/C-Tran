@@ -226,7 +226,7 @@ def get_data(args):
         valid_dataset = RFMiDDataset(image_val_dir, val_list, transform_val, known_labels=args.test_known_labels,testing=True)
 
     elif dataset == 'merged':
-        IMG_SIZE = 600
+        IMG_SIZE = args.img_size
 
         if args.local_run:
             data_root = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets'

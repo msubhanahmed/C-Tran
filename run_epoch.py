@@ -26,7 +26,10 @@ def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_sch
     loss_total = 0
     unk_loss_total = 0
 
-    criterion = AsymmetricLossOptimized(gamma_neg=2, gamma_pos=1, clip=0)
+    if args.loss == 'asl':
+        criterion = AsymmetricLossOptimized(gamma_neg=2, gamma_pos=1, clip=0)
+    else:
+        criterion = nn.BCEWithLogitsLoss(reduction='none')
 
     for batch in tqdm(data,mininterval=0.5,desc=desc,leave=False,ncols=50):
         if batch_idx == max_samples:
