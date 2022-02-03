@@ -18,8 +18,14 @@ def get_args(parser,eval=False):
     parser.add_argument('--resample_algorithm', type=str, default='ml_ros')
     parser.add_argument('--resample_perc', type=int, default=0)
 
+    #Assymetric Loss
+    parser.add_argument('--gamma_pos', type=int, default=4)
+    parser.add_argument('--gamma_neg', type=int, default=0)
+    parser.add_argument('--clip', type=float, default=0.0)
+    parser.add_argument('--disable_torch_fl', type=bool, default=False)
+
     # Optimization
-    parser.add_argument('--loss', type=str, choices=['asl', 'bce'], default='bce')
+    parser.add_argument('--loss', type=str, choices=['asl', 'bce', 'wbce'], default='bce')
     parser.add_argument('--optim', type=str, choices=['adam', 'sgd'], default='adam')
     parser.add_argument('--lr', type=float, default=0.0002)
     parser.add_argument('--batch_size', type=int, default=8)

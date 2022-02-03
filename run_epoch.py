@@ -7,6 +7,13 @@ from models.utils import custom_replace
 import random
 
 
+def get_class_weights(y_true):
+    y_pos = np.sum(y_true, axis=0)
+    weights = y_pos.max() / y_pos
+
+    return torch.Tensor(weights)
+
+
 def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_scheduler=None):
     if train:
         model.train()
@@ -27,9 +34,11 @@ def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_sch
     unk_loss_total = 0
 
     if args.loss == 'asl':
-        criterion = AsymmetricLossOptimized(gamma_neg=2, gamma_pos=1, clip=0)
-    else:
+        criterion = AsymmetricLossOptimized(gamma_neg=args.gamma_neg, gamma_pos=args.gamma_pos, clip=args.clip, disable_torch_grad_focal_loss=args.disable_torch_fl)
+    elif args.loss == 'bce':
         criterion = nn.BCEWithLogitsLoss(reduction='none')
+    elif args.loss == 'wbce':
+        criterion = nn.BCEWithLogitsLoss(weight=get_class_weights(data.dataset.get_labels()), reduction=None)
 
     for batch in tqdm(data,mininterval=0.5,desc=desc,leave=False,ncols=50):
         if batch_idx == max_samples:
