@@ -126,6 +126,7 @@ class Logger:
                     'test_mAP': test_metrics['ml_mAP'],
                     'valid_model_score': valid_metrics['model_score'],
                     'test_model_score': test_metrics['model_score'],
+                    'test_odir_score': test_metrics['odir_score'],
                     'valid_loss': valid_loss,
                     'test_loss': test_loss
                     }
@@ -137,6 +138,8 @@ class Logger:
             print('best mAP:  {:0.1f}'.format(self.best_test['ml_mAP']*100))
             print('best AUC:  {:0.1f}'.format(self.best_test['ml_auc']*100))
             print('best ML_Score:  {:0.1f}'.format(self.best_test['ml_score']*100))
+            print('best model_score: {:0.1f}'.format(self.best_test['model_score'] * 100))
+            print('best odir_score: {:0.1f}'.format(self.best_test['odir_score']*100))
             print('best CF1:  {:0.1f}'.format(self.best_test['CF1']*100))
             print('best OF1:  {:0.1f}'.format(self.best_test['OF1']*100))
             print('**********************************')

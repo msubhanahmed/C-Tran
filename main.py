@@ -27,7 +27,7 @@ if __name__ == '__main__':
         model = CTranModelCub(args.num_labels,args.use_lmt,args.pos_emb,args.layers,    args.heads,args.dropout,args.no_x_features)
         print(model.self_attn_layers)
     else:
-        model = CTranModel(args.num_labels,args.use_lmt, device, args.pos_emb,args. layers,args.heads,args.dropout,args.no_x_features)
+        model = CTranModel(args.num_labels,args.use_lmt, device, args.backbone, args.pos_emb,args.layers,args.heads,args.dropout,args.no_x_features)
         print(model.self_attn_layers)
 
 
@@ -47,11 +47,11 @@ if __name__ == '__main__':
     if args.inference:
         model = load_saved_model(args.saved_model_name,model)
         if test_loader is not None:
-            data_loader =test_loader
+            data_loader = test_loader
         else:
-            data_loader =valid_loader
+            data_loader = valid_loader
 
-        all_preds,all_targs,all_masks,all_ids,test_loss,test_loss_unk = run_epoch   (args,model,data_loader,None,1,'Testing', device)
+        all_preds,all_targs,all_masks,all_ids,test_loss,test_loss_unk = run_epoch(args,model,data_loader,None,1,'Testing', device)
         test_metrics = evaluate.compute_metrics(args,all_preds,all_targs,all_masks, test_loss,test_loss_unk,0,args.test_known_labels)
 
         exit(0)

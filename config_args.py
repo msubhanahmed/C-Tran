@@ -6,7 +6,7 @@ from pdb import set_trace as stop
 
 def get_args(parser,eval=False):
     parser.add_argument('--dataroot', type=str, default='./data/')
-    parser.add_argument('--dataset', type=str, choices=['coco', 'voc','coco1000','nus','vg','news','cub', 'rfmid', 'merged'], default='merged')
+    parser.add_argument('--dataset', type=str, choices=['coco', 'voc','coco1000','nus','vg','news','cub', 'rfmid', 'merged', 'odir'], default='merged')
     parser.add_argument('--workers', type=int, default=10)
     parser.add_argument('--results_dir', type=str, default='results/')
     parser.add_argument('--test_known', type=int, default=0)
@@ -14,8 +14,8 @@ def get_args(parser,eval=False):
     # Testing
     parser.add_argument('--local_run', type=bool, default=False)
 
-
     # Augmentation
+    parser.add_argument('--resample_algorithm', type=str, default='ml_ros')
     parser.add_argument('--resample_perc', type=int, default=0)
 
     # Optimization
@@ -47,6 +47,7 @@ def get_args(parser,eval=False):
     parser.add_argument('--use_lmt', dest='use_lmt', action='store_true',help='label mask training') 
     parser.add_argument('--freeze_backbone', action='store_true')
     parser.add_argument('--no_x_features', action='store_true')
+    parser.add_argument('--backbone', type=str, default='resnet101')
 
     # CUB
     parser.add_argument('--attr_group_dict', type=str, default='')
@@ -86,6 +87,8 @@ def get_args(parser,eval=False):
         args.num_labels = 28
     elif args.dataset == 'merged':
         args.num_labels = 20
+    elif args.dataset == 'odir':
+        args.num_labels = 8
     else:
         print('dataset not included')
         exit()

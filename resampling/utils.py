@@ -14,6 +14,8 @@ def __resample(x, y, resample_func, oversample, percentage=10):
         return x.iloc[mask, :], y.iloc[mask, :]
 
 def resample_dataset(x, y, algorithm, percentage=10):
+    if percentage == 0: # Quick fix because I'm tired
+        return x, y
     if algorithm == 'lp_rus':
         return __resample(x, y, lp_rus.LP_RUS, False, percentage)
     if algorithm == 'lp_ros':

@@ -29,7 +29,7 @@ def compute_metrics(args,all_predictions,all_targets,all_masks,loss,loss_unk,ela
     unknown_label_mask = custom_replace(all_masks,1,0,0)
 
     if known_labels > 0:
-        ml_meanAP = ml_auc_score = ml_f1 = bin_auc = bin_f1 = ml_score = 0
+        ml_meanAP = ml_auc_score = ml_f1 = bin_auc = bin_f1 = ml_score = all_mAP = all_auc = all_f1 = all_kappa = odir_score = 0
     else:
         ml_meanAP = metrics.average_precision_score(multilabel_targets,multilabel_predictions, average='macro', pos_label=1)
         ml_auc_score = metrics.roc_auc_score(multilabel_targets, multilabel_predictions, average='macro')
@@ -39,6 +39,18 @@ def compute_metrics(args,all_predictions,all_targets,all_masks,loss,loss_unk,ela
         bin_f1 = metrics.f1_score(bin_targets, bin_predictions_thr)
 
         ml_score = (ml_meanAP + ml_auc_score) / 2.0
+
+        all_mAP = metrics.average_precision_score(all_targets, all_predictions, average='macro')
+        all_auc = metrics.roc_auc_score(all_targets, all_predictions, average='macro')
+        all_f1 = metrics.f1_score(all_targets, (all_predictions>0.5), average='macro')
+
+        all_kappa = 0.0
+        for col in range(0, all_targets.size(dim=1)):
+            all_kappa += metrics.cohen_kappa_score(all_targets[:, col], (all_predictions[:, col]>0.5))
+
+        all_kappa /= (all_targets.size(dim=1) * 1.0)
+
+        odir_score = (all_auc + all_f1 + all_kappa) / 3.0
 
     optimal_threshold = 0.5 
 
@@ -101,6 +113,12 @@ def compute_metrics(args,all_predictions,all_targets,all_masks,loss,loss_unk,ela
         print('bin_f1:   {:0.5f}'.format(bin_f1))
         print('model_score: {:0.5f}'.format((ml_score + bin_auc)/2.0))
         print('----')
+        print('all_mAP: {:0.5f}'.format(all_mAP))
+        print('all_f1: {:0.5f}'.format(all_f1))
+        print('all_auc: {:0.5f}'.format(all_auc))
+        print('all_kappa: {:0.5f}'.format(all_kappa))
+        print('odir_score: {:0.5f}'.format(odir_score))
+        print('---')
         print('CP:    {:0.1f}'.format(CP*100))
         print('CR:    {:0.1f}'.format(CR*100))
         print('CF1:   {:0.1f}'.format(CF1*100))
@@ -114,6 +132,7 @@ def compute_metrics(args,all_predictions,all_targets,all_masks,loss,loss_unk,ela
     metrics_dict['ml_score'] = ml_score
     metrics_dict['bin_auc'] = bin_auc
     metrics_dict['model_score'] = (ml_score + bin_auc)/2.0
+    metrics_dict['odir_score'] = odir_score
     
     metrics_dict['ACC'] = ACC
     metrics_dict['HA'] = HA

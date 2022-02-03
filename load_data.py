@@ -19,6 +19,7 @@ from dataloaders.coco1000_dataset import Coco1000Dataset
 from dataloaders.cub312_dataset import CUBDataset
 from dataloaders.rfmid_dataset import RFMiDDataset
 from dataloaders.merged_dataset import MergedDataset
+from dataloaders.odir_dataset import OdirDataset
 from resampling import utils as rutils
 
 #from datasamplers.stratified_sampler import StratifiedBatchSampler
@@ -233,7 +234,7 @@ def get_data(args):
 
             aria_img_path = os.path.join(data_root, 'ARIA\\all_images_crop')
             stare_img_path = os.path.join(data_root, 'STARE\\all_images_crop')
-            rfmid_img_path = os.path.join(data_root, 'RFMiD\\Training')
+            rfmid_img_path = os.path.join(data_root, 'RIADD_cropped\\Training_Set\\Training')
             labels_path = os.path.join(data_root, 'drop_all\\20_labels\\merged_20_labels_drop_10.0_perc.csv')
         else:
             aria_img_path = os.path.join(data_root, 'ARIA/all_images_crop')
@@ -246,14 +247,14 @@ def get_data(args):
 
         data = pd.read_csv(labels_path)
 
-        folds = MultilabelStratifiedKFold(n_splits=5, shuffle=True,random_state=42)
+        folds = MultilabelStratifiedKFold(n_splits=5, shuffle=True, random_state=42)
         for (train_idx, val_idx) in folds.split(data, data.iloc[:, 4:]):
             train_data = data.iloc[train_idx, :].reset_index(drop=True)
             val_data = data.iloc[val_idx, :].reset_index(drop=True)
             break
 
         # Augment dataset
-        x, y = rutils.resample_dataset(train_data.iloc[:, :4], train_data.iloc[:, 4:], 'ml_ros', args.resample_perc)
+        x, y = rutils.resample_dataset(train_data.iloc[:, :4], train_data.iloc[:, 4:], args.resample_algorithm, args.resample_perc)
 
         print('original shape')
         print(train_data.shape)
@@ -289,6 +290,73 @@ def get_data(args):
 
         train_dataset = MergedDataset(train_data, imgs_path, transform_train, known_labels=args.train_known_labels,testing=False)
         valid_dataset = MergedDataset(val_data, imgs_path, transform_val, known_labels=args.test_known_labels,testing=True)
+
+    elif dataset == 'odir':
+        IMG_SIZE = args.img_size
+
+        if args.local_run:
+            data_root = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets'
+
+            img_path = os.path.join('D:\\full_df.csv')
+            labels_path = os.path.join('D:\\full_df.csv')
+        else:
+            img_path = os.path.join(data_root, 'preprocessed_images')
+            labels_path = os.path.join(data_root, 'full_df.csv')
+
+        data = pd.read_csv(labels_path)
+        # Fix the labels
+        labels = pd.DataFrame(columns=['N', 'D', 'G', 'C', 'A', 'H', 'M', 'O'])
+
+        for idx, v in enumerate(data.target):
+            labels.loc[idx] = list(map(int, v.replace('[', '').replace(']', '').split(',')))
+
+        data = pd.concat([pd.DataFrame(data.iloc[:, -1]), labels], axis=1, join='inner')
+
+        folds = MultilabelStratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+        for (train_idx, val_idx) in folds.split(data.iloc[:, 0], data.iloc[:, 1:]):
+            train_data = data.iloc[train_idx, :].reset_index(drop=True)
+            val_data = data.iloc[val_idx, :].reset_index(drop=True)
+            break
+
+        # Augment dataset
+        x, y = rutils.resample_dataset(pd.DataFrame(train_data.iloc[:, 0]), train_data.iloc[:, 1:], 'ml_ros', args.resample_perc)
+
+        print('original shape')
+        print(train_data.shape)
+
+        train_data = x.join(y)
+
+        print('new shape')
+        print(train_data.shape)
+
+        transform_train = tw(ab.Compose([
+            # albumentations.RandomResizedCrop(image_size, image_size, scale=(0.85, 1), p=1),
+            ab.Resize(IMG_SIZE, IMG_SIZE),
+            ab.HorizontalFlip(p=0.5),
+            ab.VerticalFlip(p=0.5),
+            ab.Rotate(limit=30),
+            ab.MedianBlur(blur_limit=7, p=0.3),
+            ab.GaussNoise(var_limit=(0, 0.15 * 255), p=0.5),
+            ab.HueSaturationValue(hue_shift_limit=10, sat_shift_limit=10, val_shift_limit=10, p=0.3),
+            ab.RandomBrightnessContrast(brightness_limit=(-0.2, 0.2), contrast_limit=(-0.2, 0.2), p=0.3),
+            ab.Cutout(max_h_size=20, max_w_size=20, num_holes=5, p=0.5),
+            ab.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225],
+            ),
+            abp.transforms.ToTensorV2(),
+        ]))
+
+        transform_val = tw(ab.Compose([
+            ab.Resize(IMG_SIZE, IMG_SIZE),
+            ab.Normalize(),
+            abp.transforms.ToTensorV2(),
+        ]))
+
+        train_dataset = OdirDataset(train_data, img_path, transform_train, known_labels=args.train_known_labels,
+                                      testing=False)
+        valid_dataset = OdirDataset(val_data, img_path, transform_val, known_labels=args.test_known_labels,
+                                      testing=True)
     else:
         print('no dataset avail')
         exit(0)

@@ -7,7 +7,7 @@ import numpy as np
 from pdb import set_trace as stop
 import math
 from .transformer_layers import SelfAttnLayer
-from .backbone import Backbone,InceptionBackbone
+from .backbone import InceptionBackbone
 from .utils import custom_replace,weights_init
 from .position_enc import PositionEmbeddingSine,positionalencoding2d
 

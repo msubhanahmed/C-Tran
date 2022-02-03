@@ -5,21 +5,36 @@ import torch.nn.functional as F
 import numpy as np
 from pdb import set_trace as stop
 from .transformer_layers import SelfAttnLayer
-from .backbone import Backbone
+from .backbone import EfficientNetBackbone, ResNetBackbone, ConvNextBackbone
 from .utils import custom_replace,weights_init
 from .position_enc import PositionEmbeddingSine,positionalencoding2d
 
  
 class CTranModel(nn.Module):
-    def __init__(self,num_labels,use_lmt,device,pos_emb=False,layers=3,heads=4,dropout=0.1,int_loss=0,no_x_features=False):
+    def __init__(self,num_labels,use_lmt,device, backbone_model, pos_emb=False,layers=3,heads=4,dropout=0.1,int_loss=0, no_x_features=False, grad_cam=False):
         super(CTranModel, self).__init__()
         self.use_lmt = use_lmt
         
         self.no_x_features = no_x_features # (for no image features)
 
+        self.backbone = None
+        hidden = 0 # this should match the backbone output feature size
+        print(backbone_model)
+
         # ResNet backbone
-        self.backbone = Backbone()
-        hidden = 2048 # this should match the backbone output feature size
+        if 'resnet' in backbone_model or 'resnext' in backbone_model:
+            self.backbone = ResNetBackbone(backbone_model)
+            hidden = self.backbone.features
+        elif 'efficientnet' in backbone_model:
+            self.backbone = EfficientNetBackbone(backbone_model)
+            hidden = self.backbone.features
+        elif 'convnext' in backbone_model:
+            self.backbone = ConvNextBackbone(backbone_model)
+
+        else:
+            print('unknown ', backbone_model, ' model')
+            exit(0)
+
 
         self.downsample = False
         if self.downsample:
@@ -48,6 +63,7 @@ class CTranModel(nn.Module):
         # Other
         self.LayerNorm = nn.LayerNorm(hidden)
         self.dropout = nn.Dropout(dropout)
+        self.grad_cam = grad_cam
 
         # Init all except pretrained backbone
         self.label_lt.apply(weights_init)
@@ -59,11 +75,12 @@ class CTranModel(nn.Module):
         #device
         self.device = device
 
-    def forward(self,images,mask):
+    def forward(self,images,mask=None):
         const_label_input = self.label_input.repeat(images.size(0),1).to(self.device)
         init_label_embeddings = self.label_lt(const_label_input)
 
         features = self.backbone(images)
+        #print('features', features.shape)
         
         if self.downsample:
             features = self.conv_downsample(features)
@@ -71,7 +88,8 @@ class CTranModel(nn.Module):
             pos_encoding = self.position_encoding(features,torch.zeros(features.size(0),18,18, dtype=torch.bool).to(self.device))
             features = features + pos_encoding
 
-        features = features.view(features.size(0),features.size(1),-1).permute(0,2,1) 
+        features = features.view(features.size(0),features.size(1),-1).permute(0,2,1)
+        #print('features after weird stuff', features.shape)
 
         if self.use_lmt:
             # Convert mask values to positive integers for nn.Embedding
@@ -89,6 +107,7 @@ class CTranModel(nn.Module):
             # Concat image and label embeddings
             embeddings = torch.cat((features,init_label_embeddings),1)
 
+        #print('embeddings', embeddings.shape)
         # Feed image and label embeddings through Transformer
         embeddings = self.LayerNorm(embeddings)        
         attns = []
@@ -102,5 +121,8 @@ class CTranModel(nn.Module):
         diag_mask = torch.eye(output.size(1)).unsqueeze(0).repeat(output.size(0),1,1).to(self.device)
         output = (output*diag_mask).sum(-1)
 
-        return output,None,attns
+        if self.grad_cam:
+            return output
+
+        return output, None, attns
 

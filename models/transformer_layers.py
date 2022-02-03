@@ -37,7 +37,7 @@ class SelfAttnLayer(nn.Module):
 
     def forward(self,k,mask=None):
         attn = None
-        k=k.transpose(0,1)  
+        k=k.transpose(0,1)
         x,attn = self.transformer_layer(k,src_mask=mask)
         # x = self.transformer_layer(k,src_mask=mask)
         x=x.transpose(0,1)
