@@ -20,8 +20,8 @@ def get_args(parser,eval=False):
 
     #Assymetric Loss
     parser.add_argument('--gamma_pos', type=int, default=4)
-    parser.add_argument('--gamma_neg', type=int, default=0)
-    parser.add_argument('--clip', type=float, default=0.0)
+    parser.add_argument('--gamma_neg', type=int, default=1)
+    parser.add_argument('--clip', type=float, default=0.05)
     parser.add_argument('--disable_torch_fl', type=bool, default=False)
 
     # Optimization
@@ -144,7 +144,8 @@ def get_args(parser,eval=False):
         model_name += '.'+args.name
     
     if not os.path.exists(args.results_dir):
-        os.makedirs(args.results_dir)
+        pass
+        #os.makedirs(args.results_dir)
         
     model_name = os.path.join(args.results_dir,model_name)
     
@@ -163,7 +164,8 @@ def get_args(parser,eval=False):
         elif not 'y' in overwrite_status:
             exit(0)
     elif not os.path.exists(args.model_name):
-        os.makedirs(args.model_name)
+        pass
+        #os.makedirs(args.model_name)
 
 
     return args

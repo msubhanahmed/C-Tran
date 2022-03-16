@@ -1,4 +1,3 @@
- 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -9,11 +8,12 @@ import math
 from typing import Optional, List
 from torch import nn, Tensor
 
-def custom_replace(tensor,on_neg_1,on_zero,on_one):
+
+def custom_replace(tensor, on_neg_1, on_zero, on_one):
     res = tensor.clone()
-    res[tensor==-1] = on_neg_1
-    res[tensor==0] = on_zero
-    res[tensor==1] = on_one
+    res[tensor == -1] = on_neg_1
+    res[tensor == 0] = on_zero
+    res[tensor == 1] = on_one
     return res
 
 
@@ -23,6 +23,7 @@ def get_activation_fn(activation):
     elif activation == "gelu":
         return F.gelu
     raise RuntimeError("activation should be relu/gelu, not {}".format(activation))
+
 
 def build_position_encoding(args):
     N_steps = args.hidden_dim // 2
@@ -42,6 +43,7 @@ def xavier_init(m):
     if type(m) == nn.Linear:
         torch.nn.init.xavier_uniform(m.weight)
         m.bias.data.fill_(0.01)
+
 
 def weights_init(module):
     """ Initialize the weights """

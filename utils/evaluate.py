@@ -8,12 +8,12 @@ from pdb import set_trace as stop
 import os
 from models.utils import custom_replace
 from utils.metrics import *
-import torch.nn.functional as F 
+import torch.nn.functional as F
 import warnings
 warnings.filterwarnings("ignore")
 
 
-def compute_metrics(args,all_predictions,all_targets,all_masks,loss,loss_unk,elapsed,known_labels=0,all_metrics=False,verbose=True):
+def compute_metrics(args,all_predictions,all_targets,all_masks,loss,loss_unk,elapsed,known_labels=0, metrics_per_class=False,verbose=True):
 
     all_predictions = F.sigmoid(all_predictions)
 
@@ -52,7 +52,16 @@ def compute_metrics(args,all_predictions,all_targets,all_masks,loss,loss_unk,ela
 
         odir_score = (all_auc + all_f1 + all_kappa) / 3.0
 
-    optimal_threshold = 0.5 
+    if metrics_per_class:
+        scores = np.zeros((4, all_targets.size(dim=1)))
+        for idx in range(all_targets.size(dim=1)):
+            scores[0, idx] = metrics.precision_score(all_targets[:, idx], (all_predictions[:, idx] > 0.5))
+            scores[1, idx] = metrics.recall_score(all_targets[:, idx], (all_predictions[:, idx] > 0.5))
+            scores[2, idx] = metrics.f1_score(all_targets[:, idx], (all_predictions[:, idx] > 0.5))
+            scores[3, idx] = metrics.roc_auc_score(all_targets[:, idx], all_predictions[:, idx])
+        print(scores)
+
+    optimal_threshold = 0.5
 
     all_targets = all_targets.numpy()
     all_predictions = all_predictions.numpy()
@@ -70,7 +79,7 @@ def compute_metrics(args,all_predictions,all_targets,all_masks,loss,loss_unk,ela
     OR_top3 = metrics.recall_score(all_targets, all_predictions_top3, average='micro')
     OF1_top3 = (2*OP_top3*OR_top3)/(OP_top3+OR_top3)
 
-    
+
     all_predictions_thresh = all_predictions.copy()
     all_predictions_thresh[all_predictions_thresh < optimal_threshold] = 0
     all_predictions_thresh[all_predictions_thresh >= optimal_threshold] = 1
@@ -79,11 +88,11 @@ def compute_metrics(args,all_predictions,all_targets,all_masks,loss,loss_unk,ela
     CF1 = (2*CP*CR)/(CP+CR)
     OP = metrics.precision_score(all_targets, all_predictions_thresh, average='micro')
     OR = metrics.recall_score(all_targets, all_predictions_thresh, average='micro')
-    OF1 = (2*OP*OR)/(OP+OR)  
+    OF1 = (2*OP*OR)/(OP+OR)
 
     acc_ = list(subset_accuracy(all_targets, all_predictions_thresh, axis=1, per_sample=True))
     hl_ = list(hamming_loss(all_targets, all_predictions_thresh, axis=1, per_sample=True))
-    exf1_ = list(example_f1_score(all_targets, all_predictions_thresh, axis=1, per_sample=True))        
+    exf1_ = list(example_f1_score(all_targets, all_predictions_thresh, axis=1, per_sample=True))
     acc = np.mean(acc_)
     hl = np.mean(hl_)
     exf1 = np.mean(exf1_)
@@ -94,7 +103,7 @@ def compute_metrics(args,all_predictions,all_targets,all_masks,loss,loss_unk,ela
                         ('Label-based Micro F1', OF1),
                         ('Label-based Macro F1', CF1)])
 
-    
+
     ACC = eval_ret['Subset accuracy']
     HA = eval_ret['Hamming accuracy']
     ebF1 = eval_ret['Example-based F1']
@@ -133,7 +142,7 @@ def compute_metrics(args,all_predictions,all_targets,all_masks,loss,loss_unk,ela
     metrics_dict['bin_auc'] = bin_auc
     metrics_dict['model_score'] = (ml_score + bin_auc)/2.0
     metrics_dict['odir_score'] = odir_score
-    
+
     metrics_dict['ACC'] = ACC
     metrics_dict['HA'] = HA
     metrics_dict['ebF1'] = ebF1

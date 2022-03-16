@@ -31,7 +31,7 @@ if __name__ == '__main__':
         print(model.self_attn_layers)
 
 
-    def load_saved_model(saved_model_name,model):
+    def load_saved_model(saved_model_name, model):
         checkpoint = torch.load(saved_model_name)
         model.load_state_dict(checkpoint['state_dict'])
         return model
@@ -52,7 +52,8 @@ if __name__ == '__main__':
             data_loader = valid_loader
 
         all_preds,all_targs,all_masks,all_ids,test_loss,test_loss_unk = run_epoch(args,model,data_loader,None,1,'Testing', device)
-        test_metrics = evaluate.compute_metrics(args,all_preds,all_targs,all_masks, test_loss,test_loss_unk,0,args.test_known_labels)
+        test_metrics = evaluate.compute_metrics(args,all_preds,all_targs,all_masks, test_loss,test_loss_unk,0,args.test_known_labels, metrics_per_class=True)
+        print(test_metrics)
 
         exit(0)
 

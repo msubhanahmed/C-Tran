@@ -1,17 +1,16 @@
- 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from pdb import set_trace as stop
 from .transformer_layers import SelfAttnLayer
-from .backbone import EfficientNetBackbone, ResNetBackbone, ConvNextBackbone
-from .utils import custom_replace,weights_init
-from .position_enc import PositionEmbeddingSine,positionalencoding2d
+from .backbone import EfficientNetBackbone, ResNetBackbone, ConvNextBackbone, BasicConv2d
+from .utils import custom_replace, weights_init
+from .position_enc import PositionEmbeddingSine, positionalencoding2d
 
  
 class CTranModel(nn.Module):
-    def __init__(self,num_labels,use_lmt,device, backbone_model, pos_emb=False,layers=3,heads=4,dropout=0.1,int_loss=0, no_x_features=False, grad_cam=False):
+    def __init__(self,num_labels,use_lmt,device, backbone_model, pos_emb=False,layers=3,heads=4,dropout=0.1, int_loss=0, no_x_features=False, grad_cam=False):
         super(CTranModel, self).__init__()
         self.use_lmt = use_lmt
         
@@ -24,17 +23,17 @@ class CTranModel(nn.Module):
         # ResNet backbone
         if 'resnet' in backbone_model or 'resnext' in backbone_model:
             self.backbone = ResNetBackbone(backbone_model)
-            hidden = self.backbone.features
         elif 'efficientnet' in backbone_model:
             self.backbone = EfficientNetBackbone(backbone_model)
-            hidden = self.backbone.features
         elif 'convnext' in backbone_model:
             self.backbone = ConvNextBackbone(backbone_model)
-
+        elif 'test' in backbone_model:
+            self.backbone = BasicConv2d(3, 1024, kernel_size=3)
         else:
             print('unknown ', backbone_model, ' model')
             exit(0)
 
+        hidden = self.backbone.features
 
         self.downsample = False
         if self.downsample:
@@ -58,7 +57,7 @@ class CTranModel(nn.Module):
 
         # Classifier
         # Output is of size num_labels because we want a separate classifier for each label
-        self.output_linear = torch.nn.Linear(hidden,num_labels)
+        self.output_linear = torch.nn.Linear(hidden, num_labels)
 
         # Other
         self.LayerNorm = nn.LayerNorm(hidden)
@@ -112,7 +111,7 @@ class CTranModel(nn.Module):
         embeddings = self.LayerNorm(embeddings)        
         attns = []
         for layer in self.self_attn_layers:
-            embeddings,attn = layer(embeddings,mask=None)
+            embeddings, attn = layer(embeddings, mask=None)
             attns += attn.detach().unsqueeze(0).data
 
         # Readout each label embedding using a linear layer
@@ -125,4 +124,3 @@ class CTranModel(nn.Module):
             return output
 
         return output, None, attns
-

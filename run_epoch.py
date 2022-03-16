@@ -38,7 +38,7 @@ def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_sch
     elif args.loss == 'bce':
         criterion = nn.BCEWithLogitsLoss(reduction='none')
     elif args.loss == 'wbce':
-        criterion = nn.BCEWithLogitsLoss(weight=get_class_weights(data.dataset.get_labels()), reduction=None)
+        criterion = nn.BCEWithLogitsLoss(weight=get_class_weights(data.dataset.get_labels()).to(device), reduction='none')
 
     for batch in tqdm(data,mininterval=0.5,desc=desc,leave=False,ncols=50):
         if batch_idx == max_samples:
