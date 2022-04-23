@@ -1,4 +1,4 @@
- 
+import timm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -9,43 +9,92 @@ import os
 from torch.nn import Parameter
 import torch.utils.model_zoo as model_zoo
 
- 
-class Backbone(nn.Module):
-    def __init__(self):
-        super(Backbone, self).__init__()
-        embedding_dim = 2048
+
+def create_model(name):
+    if name == 'tv_resnet101':
+        return models.resnet101(pretrained=True)
+    if name == 'tv_resnet50':
+        return models.resnet50(pretrained=True)
+    if name == 'tv_resnext101':
+        return models.resnext101_32x8d(pretrained=True)
+    if name == 'tv_resnext50':
+        return models.resnext50_32x4d(pretrained=True)
+
+    return timm.create_model(name, pretrained=True)
+
+class EfficientNetBackbone(nn.Module):
+    def __init__(self, backbone):
+        super(EfficientNetBackbone, self).__init__()
         self.freeze_base = False
-        self.freeze_base4 = False
 
-        self.base_network = models.resnet101(pretrained=True)
+        self.base_network = timm.create_model(backbone, pretrained=True)
+        self.features = self.base_network.classifier.in_features
 
-        self.base_network.avgpool = nn.AvgPool2d(kernel_size=7,stride=1,padding=0) # replace avg pool
-        # self.base_network.avgpool = nn.AvgPool2d(2,stride=2) # replace avg pool
-
-        # print(self.base_network)
         if self.freeze_base:
             for param in self.base_network.parameters():
                 param.requires_grad = False
-        elif self.freeze_base4:
-            for p in self.base_network.layer4.parameters(): 
-                p.requires_grad=True
+
+    def forward(self, images):
+        x = self.base_network.conv_stem(images)
+        x = self.base_network.bn1(x)
+        x = self.base_network.act1(x)
+        x = self.base_network.blocks(x)
+        x = self.base_network.conv_head(x)
+        x = self.base_network.bn2(x)
+        x = self.base_network.act2(x)
+
+        return x
 
 
-    def forward(self,images):
+class ResNetBackbone(nn.Module):
+    def __init__(self, backbone):
+        super(ResNetBackbone, self).__init__()
+        self.freeze_base = False
+
+        self.base_network = create_model(backbone)
+        self.features = self.base_network.fc.in_features
+
+        if self.freeze_base:
+            for param in self.base_network.parameters():
+                param.requires_grad = False
+
+    def forward(self, images):
         x = self.base_network.conv1(images)
         x = self.base_network.bn1(x)
-        x = self.base_network.relu(x)
+        x = self.base_network.act1(x)
         x = self.base_network.maxpool(x)
         x = self.base_network.layer1(x)
         x = self.base_network.layer2(x)
         x = self.base_network.layer3(x)
         x = self.base_network.layer4(x)
         # x = self.base_network.avgpool(x)
-    
+
         return x
 
 
- 
+class ConvNextBackbone(nn.Module):
+    def __init__(self, backbone):
+        super(ConvNextBackbone, self).__init__()
+        self.freeze_base = False
+
+        self.base_network = timm.create_model(backbone, pretrained=True)
+        self.features = self.base_network.head.fc.in_features
+
+        if self.freeze_base:
+            for param in self.base_network.parameters():
+                param.requires_grad = False
+
+    def forward(self, images):
+        x = self.base_network.stem(images)
+        x = self.base_network.stages(x)
+        x = self.base_network.norm_pre(x)
+        #x = self.base_network.head.global_pool(x)
+        #x = self.base_network.head.norm(x)
+
+        return x
+
+
+
 __all__ = ['MLP', 'Inception3', 'inception_v3', 'End2EndModel']
 
 model_urls = {
@@ -55,16 +104,17 @@ model_urls = {
     'inception_v3_google': 'https://download.pytorch.org/models/inception_v3_google-1a9a5a14.pth',
 }
 
+
 class InceptionBackbone(nn.Module):
     def __init__(self):
         super(InceptionBackbone, self).__init__()
-        self.base_network = inception_v3(pretrained=True,freeze=False)
+        self.base_network = inception_v3(pretrained=True, freeze=False)
 
-    def forward(self,images):
+    def forward(self, images):
         x = self.base_network(images)
-    
+
         return x
- 
+
 
 def inception_v3(pretrained, freeze, **kwargs):
     """Inception v3 model architecture from
@@ -96,7 +146,8 @@ def inception_v3(pretrained, freeze, **kwargs):
 
 class Inception3(nn.Module):
 
-    def __init__(self, num_classes=312, aux_logits=True, transform_input=False, n_attributes=0, bottleneck=False, expand_dim=0, three_class=False, connect_CY=False):
+    def __init__(self, num_classes=312, aux_logits=True, transform_input=False, n_attributes=0, bottleneck=False,
+                 expand_dim=0, three_class=False, connect_CY=False):
         """
         Args:
         num_classes: number of main task classes
@@ -193,7 +244,6 @@ class Inception3(nn.Module):
         if self.aux_logits:
             out_aux = self.AuxLogits(x)
 
-
         # N x 768 x 17 x 17
         x = self.Mixed_7a(x)
         # N x 1280 x 8 x 8
@@ -202,7 +252,7 @@ class Inception3(nn.Module):
         x = self.Mixed_7c(x)
         # N x 2048 x 8 x 8
 
-        return out_aux,x
+        return out_aux, x
 
         # # Adaptive average pooling
         # x = F.adaptive_avg_pool2d(x, (1, 1))
@@ -423,6 +473,7 @@ class InceptionE(nn.Module):
         outputs = [branch1x1, branch3x3, branch3x3dbl, branch_pool]
         return torch.cat(outputs, 1)
 
+
 class InceptionAux(nn.Module):
 
     def __init__(self, in_channels, num_classes, conv_block=None):
@@ -443,10 +494,8 @@ class InceptionAux(nn.Module):
 
         x = self.conv0(x)
 
-    
         # N x 128 x 5 x 5
         x = self.conv1(x)
-
 
         # N x 768 x 1 x 1
         # Adaptive average pooling
@@ -461,14 +510,13 @@ class InceptionAux(nn.Module):
         return x
 
 
-
-
 class BasicConv2d(nn.Module):
 
     def __init__(self, in_channels, out_channels, **kwargs):
         super(BasicConv2d, self).__init__()
         self.conv = nn.Conv2d(in_channels, out_channels, bias=False, **kwargs)
         self.bn = nn.BatchNorm2d(out_channels, eps=0.001)
+        self.features = out_channels
 
     def forward(self, x_in):
         x = self.conv(x_in)
