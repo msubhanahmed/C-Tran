@@ -20,13 +20,13 @@ print(test_img.shape)
 test_mask = torch.from_numpy(np.zeros((1, 20))).float()
 
 
-ctran_or = CTran_original.CTranModel(backbone_model='test', device='cpu', num_labels=20, use_lmt=True)
+#ctran_or = CTran_original.CTranModel(backbone_model='test', device='cpu', num_labels=20, use_lmt=True)
 #ctran = CTranModel(backbone_model='resnet101', device='cpu', num_labels=20, use_lmt=True)
 
-emb, _, _ = ctran_or.forward(test_img, test_mask)
+#emb, _, _ = ctran_or.forward(test_img, test_mask)
 #features, label_emb, _ = ctran.forward(test_img, test_mask)
 
-print('embeddings', emb.shape)
+#print('embeddings', emb.shape)
 
 # make embeddings perfect square
 #padding = int(math.sqrt(emb.shape[1])) + 1

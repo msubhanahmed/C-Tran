@@ -6,10 +6,12 @@
 # --------------------------------------------------------
 
 import torch
-import torch.nn.functional as nnF
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
+from einops import repeat, rearrange
+from einops.layers.torch import Rearrange
 
 
 class Mlp(nn.Module):
@@ -31,11 +33,20 @@ class Mlp(nn.Module):
         return x
 
 
+def custom_replace(tensor, on_neg_1, on_zero, on_one):
+    res = tensor.clone()
+    res[tensor == -1] = on_neg_1
+    res[tensor == 0] = on_zero
+    res[tensor == 1] = on_one
+    return res
+
+
 def window_partition(x, window_size):
     """
     Args:
         x: (B, H, W, C)
         window_size (int): window size
+
     Returns:
         windows: (num_windows*B, window_size, window_size, C)
     """
@@ -52,6 +63,7 @@ def window_reverse(windows, window_size, H, W):
         window_size (int): Window size
         H (int): Height of image
         W (int): Width of image
+
     Returns:
         x: (B, H, W, C)
     """
@@ -64,6 +76,7 @@ def window_reverse(windows, window_size, H, W):
 class WindowAttention(nn.Module):
     r""" Window based multi-head self attention (W-MSA) module with relative position bias.
     It supports both of shifted and non-shifted window.
+
     Args:
         dim (int): Number of input channels.
         window_size (tuple[int]): The height and width of the window.
@@ -86,8 +99,6 @@ class WindowAttention(nn.Module):
         # define a parameter table of relative position bias
         self.relative_position_bias_table = nn.Parameter(
             torch.zeros((2 * window_size[0] - 1) * (2 * window_size[1] - 1), num_heads))  # 2*Wh-1 * 2*Ww-1, nH
-
-        #print('bias table: ', self.relative_position_bias_table.shape)
 
         # get pair-wise relative position index for each token inside the window
         coords_h = torch.arange(self.window_size[0])
@@ -126,13 +137,16 @@ class WindowAttention(nn.Module):
         relative_position_bias = self.relative_position_bias_table[self.relative_position_index.view(-1)].view(
             self.window_size[0] * self.window_size[1], self.window_size[0] * self.window_size[1], -1)  # Wh*Ww,Wh*Ww,nH
         relative_position_bias = relative_position_bias.permute(2, 0, 1).contiguous()  # nH, Wh*Ww, Wh*Ww
-        #attn = attn + relative_position_bias.unsqueeze(0)
+        # attn = attn + relative_position_bias.unsqueeze(0)
+        # print(attn.shape, relative_position_bias.unsqueeze(0).shape)
+        ws = self.window_size[0] * self.window_size[1]
+        attn[..., :ws, :ws] = attn[..., :ws, :ws] + relative_position_bias.unsqueeze(0)
 
         if mask is not None:
             nW = mask.shape[0]
-            print('attn operation', attn.view(B_ // nW, nW, self.num_heads, N, N).shape)
-            print('mask operation ', mask.unsqueeze(1).unsqueeze(0).shape)
-            attn = attn.view(B_ // nW, nW, self.num_heads, N, N) + mask.unsqueeze(1).unsqueeze(0)
+            # attn = attn.view(B_ // nW, nW, self.num_heads, N, N) + mask.unsqueeze(1).unsqueeze(0)
+            attn = attn.view(B_ // nW, nW, self.num_heads, N, N)
+            attn[..., :ws, :ws] = attn[..., :ws, :ws] + mask.unsqueeze(1).unsqueeze(0)
             attn = attn.view(-1, self.num_heads, N, N)
             attn = self.softmax(attn)
         else:
@@ -162,8 +176,26 @@ class WindowAttention(nn.Module):
         return flops
 
 
+class GeM(nn.Module):
+    def __init__(self, p=3, eps=1e-6):
+        super(GeM, self).__init__()
+        self.p = nn.Parameter(torch.ones(1) * p)
+        self.eps = eps
+
+    def forward(self, x):
+        return self.gem(x, p=self.p, eps=self.eps)
+
+    def gem(self, x, p=3, eps=1e-6):
+        return F.avg_pool2d(x.clamp(min=eps).pow(p), (x.size(-2), x.size(-1))).pow(1. / p)
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(' + 'p=' + '{:.4f}'.format(self.p.data.tolist()[0]) + ', ' + 'eps=' + str(
+            self.eps) + ')'
+
+
 class SwinTransformerBlock(nn.Module):
     r""" Swin Transformer Block.
+
     Args:
         dim (int): Number of input channels.
         input_resolution (tuple[int]): Input resulotion.
@@ -226,23 +258,29 @@ class SwinTransformerBlock(nn.Module):
             mask_windows = mask_windows.view(-1, self.window_size * self.window_size)
             attn_mask = mask_windows.unsqueeze(1) - mask_windows.unsqueeze(2)
             attn_mask = attn_mask.masked_fill(attn_mask != 0, float(-100.0)).masked_fill(attn_mask == 0, float(0.0))
-
-            # add label padding
-            # (left, right, top, bottom)
-            attn_mask = nnF.pad(attn_mask, (0, 20, 0, 20))
         else:
             attn_mask = None
-
+        self.merge_emb = GeM()  # Todo - can try other type of pooling
         self.register_buffer("attn_mask", attn_mask)
 
-    def forward(self, x):
+    def forward(self, x, emb):
         H, W = self.input_resolution
         B, L, C = x.shape
         assert L == H * W, "input feature has wrong size"
 
+        # concat with the label embeddings
+        x = torch.cat([x, emb], dim=1)
+
         shortcut = x
         x = self.norm1(x)
+
+        # split to features and embeddings
+        x, emb = torch.split(x, [x.shape[1] - emb.shape[1], emb.shape[1]], dim=1)
+
         x = x.view(B, H, W, C)
+
+        # shortcut_emb = emb
+        # emb = self.norm1(emb)
 
         # cyclic shift
         if self.shift_size > 0:
@@ -254,32 +292,23 @@ class SwinTransformerBlock(nn.Module):
         x_windows = window_partition(shifted_x, self.window_size)  # nW*B, window_size, window_size, C
         x_windows = x_windows.view(-1, self.window_size * self.window_size, C)  # nW*B, window_size*window_size, C
 
-        print('x_windows', x_windows.shape)
-
-        # Dummy implementation of label embeddings
-        label_emb = torch.zeros(x_windows.shape[0], 20, x_windows.shape[2])
-        x_windows = torch.cat((x_windows, label_emb), 1)
-        print('label_emb', label_emb.shape)
-        print('x_windows_new', x_windows.shape)
-        if self.attn_mask is None:
-            print('mask', None)
-        else:
-            print('mask', self.attn_mask.shape)
+        # concat with the label embeddings
+        x_windows = torch.cat([x_windows, repeat(emb, 'b n c -> (nW b) n c', nW=x_windows.shape[0] // B)], dim=1)
 
         # W-MSA/SW-MSA
         attn_windows = self.attn(x_windows, mask=self.attn_mask)  # nW*B, window_size*window_size, C
 
-        print('attn_win', attn_windows.shape)
-
-        attn_labels = attn_windows[:, -20:, :]
-        attn_windows = attn_windows[:, :-20, :]
-
-        print('ex attn_win', attn_windows.shape)
-        print('attn lab', attn_labels.shape)
+        # split to features and embeddings
+        attn_windows, emb = torch.split(attn_windows, [attn_windows.shape[1] - emb.shape[1], emb.shape[1]], dim=1)
 
         # merge windows
         attn_windows = attn_windows.view(-1, self.window_size, self.window_size, C)
         shifted_x = window_reverse(attn_windows, self.window_size, H, W)  # B H' W' C
+
+        # merge embeddings
+        emb = rearrange(emb, '(nW b) n c -> (n b) c nW ()', b=B)
+        emb = self.merge_emb(emb)
+        emb = rearrange(emb, '(n b) c () () -> b n c', b=B)
 
         # reverse cyclic shift
         if self.shift_size > 0:
@@ -288,11 +317,20 @@ class SwinTransformerBlock(nn.Module):
             x = shifted_x
         x = x.view(B, H * W, C)
 
+        # concat with the label embeddings
+        x = torch.cat([x, emb], dim=1)
+
         # FFN
         x = shortcut + self.drop_path(x)
         x = x + self.drop_path(self.mlp(self.norm2(x)))
 
-        return x
+        # emb = shortcut_emb + self.drop_path(emb)
+        # emb = emb + self.drop_path(self.mlp(self.norm2(emb)))
+
+        # split to features and embeddings
+        x, emb = torch.split(x, [x.shape[1] - emb.shape[1], emb.shape[1]], dim=1)
+
+        return x, emb
 
     def extra_repr(self) -> str:
         return f"dim={self.dim}, input_resolution={self.input_resolution}, num_heads={self.num_heads}, " \
@@ -315,6 +353,7 @@ class SwinTransformerBlock(nn.Module):
 
 class PatchMerging(nn.Module):
     r""" Patch Merging Layer.
+
     Args:
         input_resolution (tuple[int]): Resolution of input feature.
         dim (int): Number of input channels.
@@ -363,6 +402,7 @@ class PatchMerging(nn.Module):
 
 class BasicLayer(nn.Module):
     """ A basic Swin Transformer layer for one stage.
+
     Args:
         dim (int): Number of input channels.
         input_resolution (tuple[int]): Input resolution.
@@ -405,18 +445,20 @@ class BasicLayer(nn.Module):
         # patch merging layer
         if downsample is not None:
             self.downsample = downsample(input_resolution, dim=dim, norm_layer=norm_layer)
+            self.expand_emb = nn.Linear(dim, dim * 2)
         else:
             self.downsample = None
 
-    def forward(self, x):
+    def forward(self, x, emb):
         for blk in self.blocks:
             if self.use_checkpoint:
-                x = checkpoint.checkpoint(blk, x)
+                x, emb = checkpoint.checkpoint(blk, x, emb)
             else:
-                x = blk(x)
+                x, emb = blk(x, emb)
         if self.downsample is not None:
             x = self.downsample(x)
-        return x
+            emb = self.expand_emb(emb)
+        return x, emb
 
     def extra_repr(self) -> str:
         return f"dim={self.dim}, input_resolution={self.input_resolution}, depth={self.depth}"
@@ -432,6 +474,7 @@ class BasicLayer(nn.Module):
 
 class PatchEmbed(nn.Module):
     r""" Image to Patch Embedding
+
     Args:
         img_size (int): Image size.  Default: 224.
         patch_size (int): Patch token size. Default: 4.
@@ -462,25 +505,26 @@ class PatchEmbed(nn.Module):
     def forward(self, x):
         B, C, H, W = x.shape
         # FIXME look at relaxing size constraints
-        assert H == self.img_size[0] and W == self.img_size[1], \
-            f"Input image size ({H}*{W}) doesn't match model ({self.img_size[0]}*{self.img_size[1]})."
+        # assert H == self.img_size[0] and W == self.img_size[1], \
+        #     f"Input image size ({H}*{W}) doesn't match model ({self.img_size[0]}*{self.img_size[1]})."
         x = self.proj(x).flatten(2).transpose(1, 2)  # B Ph*Pw C
         if self.norm is not None:
             x = self.norm(x)
         return x
 
-    def flops(self):
-        Ho, Wo = self.patches_resolution
-        flops = Ho * Wo * self.embed_dim * self.in_chans * (self.patch_size[0] * self.patch_size[1])
-        if self.norm is not None:
-            flops += Ho * Wo * self.embed_dim
-        return flops
+    # def flops(self):
+    #     Ho, Wo = self.patches_resolution
+    #     flops = Ho * Wo * self.embed_dim * self.in_chans * (self.patch_size[0] * self.patch_size[1])
+    #     if self.norm is not None:
+    #         flops += Ho * Wo * self.embed_dim
+    #     return flops
 
 
 class SwinTransformer(nn.Module):
     r""" Swin Transformer
         A PyTorch impl of : `Swin Transformer: Hierarchical Vision Transformer using Shifted Windows`  -
           https://arxiv.org/pdf/2103.14030
+
     Args:
         img_size (int | tuple(int)): Input image size. Default 224
         patch_size (int | tuple(int)): Patch size. Default: 4
@@ -506,10 +550,18 @@ class SwinTransformer(nn.Module):
                  embed_dim=96, depths=[2, 2, 6, 2], num_heads=[3, 6, 12, 24],
                  window_size=7, mlp_ratio=4., qkv_bias=True, qk_scale=None,
                  drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1,
-                 norm_layer=nn.LayerNorm, ape=False, patch_norm=True,
+                 use_lmt=False, backbone=None,  # backbone_size=0,  # Todo - Note this line
+                 norm_layer=nn.LayerNorm, ape=False, patch_norm=True,  # use_lmt=False,
                  use_checkpoint=False, **kwargs):
         super().__init__()
+        # with backbone
+        if backbone is not None:
+            self.backbone = backbone
+            x = torch.rand(1, in_chans, img_size, img_size)
+            x = self.backbone.eval()(x)
+            embed_dim = x.shape[1]  # backbone_size
 
+        self.use_lmt = use_lmt
         self.num_classes = num_classes
         self.num_layers = len(depths)
         self.embed_dim = embed_dim
@@ -518,12 +570,27 @@ class SwinTransformer(nn.Module):
         self.num_features = int(embed_dim * 2 ** (self.num_layers - 1))
         self.mlp_ratio = mlp_ratio
 
+        # Label Embeddings
+        self.label_input = torch.arange(num_classes).view(1, -1).long()
+        self.label_lt = torch.nn.Embedding(num_classes, embed_dim, padding_idx=None)
+
+        # State Embeddings
+        if use_lmt:
+            self.known_label_lt = torch.nn.Embedding(3, embed_dim, padding_idx=0)
+
         # split image into non-overlapping patches
         self.patch_embed = PatchEmbed(
             img_size=img_size, patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim,
             norm_layer=norm_layer if self.patch_norm else None)
+
         num_patches = self.patch_embed.num_patches
         patches_resolution = self.patch_embed.patches_resolution
+
+        if backbone is not None:
+            self.patch_embed = nn.Identity()
+            patches_resolution = x.shape[-2:]
+            num_patches = patches_resolution.numel()
+
         self.patches_resolution = patches_resolution
 
         # absolute position embedding
@@ -554,14 +621,18 @@ class SwinTransformer(nn.Module):
                                use_checkpoint=use_checkpoint)
             self.layers.append(layer)
 
-        self.norm = norm_layer(self.num_features)
-        self.avgpool = nn.AdaptiveAvgPool1d(1)
-        self.head = nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity()
+        # self.norm = norm_layer(self.num_features)
+        # self.avgpool = nn.AdaptiveAvgPool1d(1)
+        # self.head = nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity()
+
+        # Classifier
+        # Output is of size num_labels because we want a separate classifier for each label
+        self.output_linear = nn.Linear(self.num_features, num_classes)
 
         self.apply(self._init_weights)
 
     def _init_weights(self, m):
-        if isinstance(m, nn.Linear):
+        if isinstance(m, (nn.Linear, nn.Embedding)):
             trunc_normal_(m.weight, std=.02)
             if isinstance(m, nn.Linear) and m.bias is not None:
                 nn.init.constant_(m.bias, 0)
@@ -577,23 +648,49 @@ class SwinTransformer(nn.Module):
     def no_weight_decay_keywords(self):
         return {'relative_position_bias_table'}
 
-    def forward_features(self, x):
+    def forward_features(self, x, mask):
+        const_label_input = self.label_input.repeat(x.size(0), 1).to(x.device)
+        # init_label_embeddings = self.label_lt(const_label_input)
+        label_embeddings = self.label_lt(const_label_input)
+
+        if self.use_lmt and mask is not None:
+            # Convert mask values to positive integers for nn.Embedding
+            label_feat_vec = custom_replace(mask, 0, 1, 2).long()
+
+            # Get state embeddings
+            state_embeddings = self.known_label_lt(label_feat_vec)
+
+            # Add state embeddings to label embeddings
+            label_embeddings += state_embeddings
+
         x = self.patch_embed(x)
+        if hasattr(self, 'backbone'):
+            x = self.backbone(x)
+            x = rearrange(x, 'b c h w -> b (h w) c')
+
         if self.ape:
             x = x + self.absolute_pos_embed
         x = self.pos_drop(x)
 
         for layer in self.layers:
-            x = layer(x)
+            print(x.shape, label_embeddings.shape)
+            x, label_embeddings = layer(x, label_embeddings)
 
-        x = self.norm(x)  # B L C
-        x = self.avgpool(x.transpose(1, 2))  # B C 1
-        x = torch.flatten(x, 1)
-        return x
+        # Readout each label embedding using a linear layer
+        output = self.output_linear(label_embeddings)
+        diag_mask = torch.eye(output.size(1)).unsqueeze(0).repeat(output.size(0), 1, 1).to(output.device)
+        output = (output * diag_mask).sum(-1)
 
-    def forward(self, x):
-        x = self.forward_features(x)
-        x = self.head(x)
+        # x = self.norm(x)  # B L C
+        # x = self.avgpool(x.transpose(1, 2))  # B C 1
+        # x = torch.flatten(x, 1)
+        # return x
+        return output
+
+    def forward(self, x, mask=None):
+        x = self.forward_features(x, mask)
+        # x = self.head(x)
+
         return x
 
     def flops(self):

@@ -93,8 +93,6 @@ class ConvNextBackbone(nn.Module):
 
         return x
 
-
-
 __all__ = ['MLP', 'Inception3', 'inception_v3', 'End2EndModel']
 
 model_urls = {
