@@ -137,6 +137,41 @@ class InceptionV3(nn.Module):
 
         return x
 
+
+class WideResNet(nn.Module):
+    def __init__(self):
+        super(WideResNet, self).__init__()
+
+        self.base_network = torchvision.models.wide_resnet101_2(pretrained=True)
+        self.features = self.base_network.fc.in_features
+
+        self.base_network.avgpool = nn.Identity()
+        self.base_network.fc = nn.Identity()
+
+    def forward(self, images):
+        x = self.base_network(images)
+
+        if len(x.shape) == 2:
+            # unflatten vector to feature maps
+            sz = int(math.sqrt(x.shape[1] // self.features))
+            x = einops.rearrange(x, 'b (h w c) -> b c h w', h=sz, w=sz, c=self.features)
+
+        return x
+
+
+class DenseNet(nn.Module):
+    def __init__(self):
+        super(DenseNet, self).__init__()
+
+        self.base_network = torchvision.models.densenet161(pretrained=True)
+        self.features = self.base_network.classifier.in_features
+
+    def forward(self, images):
+        x = self.base_network.features(images)
+
+        return x
+
+
 __all__ = ['MLP', 'Inception3', 'inception_v3', 'End2EndModel']
 
 model_urls = {

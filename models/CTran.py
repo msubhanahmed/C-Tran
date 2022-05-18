@@ -4,7 +4,8 @@ import torch.nn.functional as F
 import numpy as np
 from pdb import set_trace as stop
 from .transformer_layers import SelfAttnLayer
-from .backbone import EfficientNetBackbone, ResNetBackbone, ConvNextBackbone, BasicConv2d, InceptionV3, VGG16
+from .backbone import EfficientNetBackbone, ResNetBackbone, ConvNextBackbone, BasicConv2d, InceptionV3, VGG16, \
+    WideResNet, DenseNet
 from .utils import custom_replace, weights_init
 from .position_enc import PositionEmbeddingSine, positionalencoding2d
 
@@ -21,7 +22,11 @@ class CTranModel(nn.Module):
         print(backbone_model)
 
         # ResNet backbone
-        if 'resnet' in backbone_model or 'resnext' in backbone_model:
+        if 'wide_resnet' in backbone_model:
+            self.backbone = WideResNet()
+        elif 'densenet' in backbone_model:
+            self.backbone = DenseNet()
+        elif 'resnet' in backbone_model or 'resnext' in backbone_model:
             self.backbone = ResNetBackbone(backbone_model)
         elif 'efficientnet' in backbone_model:
             self.backbone = EfficientNetBackbone(backbone_model)
