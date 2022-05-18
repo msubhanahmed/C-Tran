@@ -11,7 +11,7 @@ import torchvision.models as models
 #print(model)
 from models.backbone import InceptionBackbone
 
-model = torchvision.models.inception_v3(pretrained=False, init_weights=True)
+model = torchvision.models.wide_resnet101_2(pretrained=False)
 
 test = torch.zeros((1,3,384,384))
 
@@ -19,10 +19,6 @@ print(test.shape)
 
 print(model)
 
-model.avgpool = nn.Identity()
-model.dropout = nn.Identity()
-model.fc = nn.Identity()
-
 out = model(test)
 
-print(out.logits.shape)
+print(out[0].shape)

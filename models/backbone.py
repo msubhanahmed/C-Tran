@@ -113,7 +113,6 @@ class VGG16(nn.Module):
 
         return x
 
-
 class InceptionV3(nn.Module):
     def __init__(self):
         super(InceptionV3, self).__init__()
@@ -128,8 +127,15 @@ class InceptionV3(nn.Module):
     def forward(self, images):
         x = self.base_network(images)
 
-        return x
+        if not torch.is_tensor(x):
+            x = x.logits
 
+        if len(x.shape) == 2:
+            # unflatten vector to feature maps
+            sz = int(math.sqrt(x.shape[1] // self.features))
+            x = einops.rearrange(x, 'b (h w c) -> b c h w', h=sz, w=sz, c=self.features)
+
+        return x
 
 __all__ = ['MLP', 'Inception3', 'inception_v3', 'End2EndModel']
 
