@@ -1,11 +1,16 @@
+import math
+
 import timm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision.models
 import torchvision.models as models
 import numpy as np
 from pdb import set_trace as stop
 import os
+
+from einops import einops
 from torch.nn import Parameter
 import torch.utils.model_zoo as model_zoo
 
@@ -45,7 +50,6 @@ class EfficientNetBackbone(nn.Module):
 
         return x
 
-
 class ResNetBackbone(nn.Module):
     def __init__(self, backbone):
         super(ResNetBackbone, self).__init__()
@@ -71,7 +75,6 @@ class ResNetBackbone(nn.Module):
 
         return x
 
-
 class ConvNextBackbone(nn.Module):
     def __init__(self, backbone):
         super(ConvNextBackbone, self).__init__()
@@ -93,6 +96,39 @@ class ConvNextBackbone(nn.Module):
 
         return x
 
+class VGG16(nn.Module):
+    def __init__(self):
+        super(VGG16, self).__init__()
+        self.freeze_base = False
+
+        self.base_network = torchvision.models.vgg16(pretrained=True)
+        self.features = 512
+
+    def forward(self, images):
+        x = self.base_network.features(images)
+
+        # unflatten vector to feature maps
+        #sz = int(math.sqrt(x.shape[1] // 512))
+        #x = einops.rearrange(x, 'b (h w c) -> b h w c', h=sz, w=sz, c=512)
+
+        return x
+
+
+class InceptionV3(nn.Module):
+    def __init__(self):
+        super(InceptionV3, self).__init__()
+
+        self.base_network = torchvision.models.inception_v3(pretrained=True)
+        self.features = self.base_network.fc.in_features
+
+        self.base_network.avgpool = nn.Identity()
+        self.base_network.dropout = nn.Identity()
+        self.base_network.fc = nn.Identity()
+
+    def forward(self, images):
+        x = self.base_network(images)
+
+        return x
 
 
 __all__ = ['MLP', 'Inception3', 'inception_v3', 'End2EndModel']
@@ -109,6 +145,7 @@ class InceptionBackbone(nn.Module):
     def __init__(self):
         super(InceptionBackbone, self).__init__()
         self.base_network = inception_v3(pretrained=True, freeze=False)
+        self.features = 2048
 
     def forward(self, images):
         x = self.base_network(images)

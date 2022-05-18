@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import numpy as np
 from pdb import set_trace as stop
 from .transformer_layers import SelfAttnLayer
-from .backbone import EfficientNetBackbone, ResNetBackbone, ConvNextBackbone, BasicConv2d
+from .backbone import EfficientNetBackbone, ResNetBackbone, ConvNextBackbone, BasicConv2d, InceptionV3, VGG16
 from .utils import custom_replace, weights_init
 from .position_enc import PositionEmbeddingSine, positionalencoding2d
 
@@ -27,6 +27,10 @@ class CTranModel(nn.Module):
             self.backbone = EfficientNetBackbone(backbone_model)
         elif 'convnext' in backbone_model:
             self.backbone = ConvNextBackbone(backbone_model)
+        elif 'inceptionv3' in backbone_model:
+            self.backbone = InceptionV3()
+        elif 'vgg16' in backbone_model:
+            self.backbone = VGG16()
         elif 'test' in backbone_model:
             self.backbone = BasicConv2d(3, 1024, kernel_size=3)
         else:
@@ -84,7 +88,7 @@ class CTranModel(nn.Module):
         if self.downsample:
             features = self.conv_downsample(features)
         if self.use_pos_enc:
-            pos_encoding = self.position_encoding(features,torch.zeros(features.size(0),18,18, dtype=torch.bool).to(self.device))
+            pos_encoding = self.position_encoding(features,torch.zeros(features.size(0), 18, 18, dtype=torch.bool).to(self.device))
             features = features + pos_encoding
 
         features = features.view(features.size(0),features.size(1),-1).permute(0,2,1)

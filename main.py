@@ -24,7 +24,7 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     if args.dataset == 'cub':
-        model = CTranModelCub(args.num_labels,args.use_lmt,args.pos_emb,args.layers,    args.heads,args.dropout,args.no_x_features)
+        model = CTranModelCub(args.num_labels,args.use_lmt,args.pos_emb,args.layers,args.heads,args.dropout,args.no_x_features)
         print(model.self_attn_layers)
     else:
         model = CTranModel(args.num_labels,args.use_lmt, device, args.backbone, args.pos_emb,args.layers,args.heads,args.dropout,args.no_x_features)
