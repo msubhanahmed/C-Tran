@@ -6,6 +6,8 @@ from tqdm import tqdm
 from models.utils import custom_replace
 import random
 
+from utils.poly_loss import BCEPolyLoss, FLPolyLoss
+
 
 def get_class_weights(y_true):
     y_pos = np.sum(y_true, axis=0)
@@ -39,6 +41,10 @@ def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_sch
         criterion = nn.BCEWithLogitsLoss(reduction='none')
     elif args.loss == 'wbce':
         criterion = nn.BCEWithLogitsLoss(weight=get_class_weights(data.dataset.get_labels()).to(device), reduction='none')
+    elif args.loss == 'bce_poly':
+        criterion = BCEPolyLoss(eps=args.poly_eps)
+    elif args.loss == 'fl_poly':
+        criterion = FLPolyLoss(eps=args.poly_eps, gamma=args.poly_gamma)
 
     for batch in tqdm(data,mininterval=0.5,desc=desc,leave=False,ncols=50):
         if batch_idx == max_samples:
@@ -74,7 +80,7 @@ def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_sch
             loss_out = 1.0*loss + float(args.aux_loss)*aux_loss
             loss = loss_out
         else:
-            loss = criterion(pred.view(labels.size(0),-1),labels.to(device))
+            loss = criterion(pred.view(labels.size(0),-1), labels.to(device))
             
             if args.loss_labels == 'unk': 
                 # only use unknown labels for loss

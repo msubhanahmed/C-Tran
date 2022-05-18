@@ -61,7 +61,7 @@ class ResNetBackbone(nn.Module):
     def forward(self, images):
         x = self.base_network.conv1(images)
         x = self.base_network.bn1(x)
-        x = self.base_network.act1(x)
+        x = self.base_network.relu(x)
         x = self.base_network.maxpool(x)
         x = self.base_network.layer1(x)
         x = self.base_network.layer2(x)

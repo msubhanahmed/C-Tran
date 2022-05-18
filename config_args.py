@@ -24,8 +24,12 @@ def get_args(parser,eval=False):
     parser.add_argument('--clip', type=float, default=0.05)
     parser.add_argument('--disable_torch_fl', type=bool, default=False)
 
+    # Poly Loss
+    parser.add_argument('--poly_eps', type=float, default=1.0)
+    parser.add_argument('--poly_gamma', type=float, default=2.0)
+
     # Optimization
-    parser.add_argument('--loss', type=str, choices=['asl', 'bce', 'wbce'], default='bce')
+    parser.add_argument('--loss', type=str, choices=['asl', 'bce', 'wbce', 'bce_poly', 'fl_poly'], default='bce')
     parser.add_argument('--optim', type=str, choices=['adam', 'sgd'], default='adam')
     parser.add_argument('--lr', type=float, default=0.0002)
     parser.add_argument('--batch_size', type=int, default=8)

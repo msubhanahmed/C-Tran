@@ -116,9 +116,15 @@ class CTranModel(nn.Module):
 
         # Readout each label embedding using a linear layer
         label_embeddings = embeddings[:,-init_label_embeddings.size(1):,:]
-        output = self.output_linear(label_embeddings) 
+        #print('forward label embeddings', label_embeddings.shape)
+        output = self.output_linear(label_embeddings)
+        #print('forward output linear', output.shape)
         diag_mask = torch.eye(output.size(1)).unsqueeze(0).repeat(output.size(0),1,1).to(self.device)
+        #print('diag mask', diag_mask.shape)
+        #print(output*diag_mask)
         output = (output*diag_mask).sum(-1)
+        #print(output)
+        #print('forward output shape:', output.shape)
 
         if self.grad_cam:
             return output
