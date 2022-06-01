@@ -229,13 +229,20 @@ def get_data(args):
     elif dataset == 'merged':
         IMG_SIZE = args.img_size
 
-        if args.local_run:
+        if args.run_platform == 'local':
             data_root = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets'
+            labels_path = os.path.join(data_root, 'drop_all\\20_labels\\merged_20_labels_drop_10.0_perc.csv')
 
             aria_img_path = os.path.join(data_root, 'ARIA\\all_images_crop')
             stare_img_path = os.path.join(data_root, 'STARE\\all_images_crop')
             rfmid_img_path = os.path.join(data_root, 'RIADD_cropped\\Training_Set\\Training')
-            labels_path = os.path.join(data_root, 'drop_all\\20_labels\\merged_20_labels_drop_10.0_perc.csv')
+
+        elif args.run_platform == 'server':
+            aria_img_path = os.path.join(data_root, 'ARIA/all_images_crop')
+            stare_img_path = os.path.join(data_root, 'STARE/all_images_crop')
+            rfmid_img_path = os.path.join(data_root, 'RIADD_cropped/Training_Set/Training')
+
+            labels_path = os.path.join(data_root, 'merged_20_labels_drop_10.0_perc.csv')
         else:
             aria_img_path = os.path.join(data_root, 'ARIA/all_images_crop')
             stare_img_path = os.path.join(data_root, 'STARE/all_images_crop')
@@ -255,18 +262,17 @@ def get_data(args):
 
         # Augment dataset
         x, y = rutils.resample_dataset(train_data.iloc[:, :4], train_data.iloc[:, 4:], args.resample_algorithm, args.resample_perc)
-
-        print('original shape')
-        print(train_data.shape)
-
         train_data = x.join(y)
 
-        print('new shape')
-        print(train_data.shape)
+        if IMG_SIZE == -1:
+            resize = ab.Resize(560, 640)
+        else:
+            resize = ab.Resize(IMG_SIZE, IMG_SIZE)
 
         transform_train = tw(ab.Compose([
         #albumentations.RandomResizedCrop(image_size, image_size, scale=(0.85, 1), p=1), 
-        ab.Resize(IMG_SIZE, IMG_SIZE), 
+        #ab.Resize(IMG_SIZE, IMG_SIZE),
+        resize,
         ab.HorizontalFlip(p=0.5),
         ab.VerticalFlip(p=0.5),
         ab.Rotate(limit=30),
@@ -283,10 +289,13 @@ def get_data(args):
         ]))
 
         transform_val = tw(ab.Compose([
-            ab.Resize(IMG_SIZE, IMG_SIZE), 
+            #ab.Resize(IMG_SIZE, IMG_SIZE),
+            resize,
             ab.Normalize(),
             abp.transforms.ToTensorV2(),
         ]))
+
+
 
         train_dataset = MergedDataset(train_data, imgs_path, transform_train, known_labels=args.train_known_labels,testing=False)
         valid_dataset = MergedDataset(val_data, imgs_path, transform_val, known_labels=args.test_known_labels,testing=True)

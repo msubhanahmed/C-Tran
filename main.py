@@ -33,7 +33,13 @@ if __name__ == '__main__':
 
     def load_saved_model(saved_model_name, model):
         checkpoint = torch.load(saved_model_name)
-        model.load_state_dict(checkpoint['state_dict'])
+        state_dict = checkpoint['state_dict']
+
+        if 'densenet' in saved_model_name:
+            for key in list(state_dict.keys()):
+                state_dict[key.replace('module.', '')] = state_dict.pop(key)
+
+        model.load_state_dict(state_dict)
         return model
 
     print(args.model_name)

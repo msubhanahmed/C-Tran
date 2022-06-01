@@ -12,7 +12,7 @@ def get_args(parser,eval=False):
     parser.add_argument('--test_known', type=int, default=0)
 
     # Testing
-    parser.add_argument('--local_run', type=bool, default=False)
+    parser.add_argument('--run_platform', type=str, choices=['local', 'kaggle', 'server'], default='kaggle')
 
     # Augmentation
     parser.add_argument('--resample_algorithm', type=str, default='ml_ros')

@@ -72,6 +72,7 @@ class CTranModel(nn.Module):
         self.LayerNorm = nn.LayerNorm(hidden)
         self.dropout = nn.Dropout(dropout)
         self.grad_cam = grad_cam
+        self.hidden = hidden
 
         # Init all except pretrained backbone
         self.label_lt.apply(weights_init)
@@ -102,12 +103,19 @@ class CTranModel(nn.Module):
         if self.use_lmt:
             # Convert mask values to positive integers for nn.Embedding
             label_feat_vec = custom_replace(mask,0,1,2).long()
+            torch.set_printoptions(threshold=10_000)
+            # print('original mask: ', mask)
+            # print('replaced mask: ', label_feat_vec)
 
             # Get state embeddings
             state_embeddings = self.known_label_lt(label_feat_vec)
+            # print('state_embeddings:', state_embeddings[0, 0])
+            # print('label_embeddings:', init_label_embeddings[0, 0])
 
             # Add state embeddings to label embeddings
             init_label_embeddings += state_embeddings
+
+            # print('masked label_embeddings', init_label_embeddings[0, 0])
         
         if self.no_x_features:
             embeddings = init_label_embeddings 

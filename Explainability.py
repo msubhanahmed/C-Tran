@@ -1,3 +1,5 @@
+import argparse
+
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 
 from models import CTranModel
@@ -20,13 +22,14 @@ heads = 4
 dropout = 0.1
 no_x_features = False
 
-image_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets\\RIADD_cropped\\Training_Set\\Training\\519.png'
+image_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets\\RIADD_cropped\\Training_Set\\Training\\542.png'
 #image_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets\\ARIA\\all_images_crop\\aria_a_13_2.tif'
 #image_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets\\STARE\\all_images_crop\\im0264.png'
-model_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\codes\\trained_models\\c-tran\\best_model.pt'
+model_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\codes\\trained_models\\c_tran' \
+             '\\merged.3layer.bsz_64.adam1e-05.lmt.unk_loss.densenet_384_b32\\best_model.pt'
 
 
-def reshape_transform(tensor, height=14, width=14):
+def reshape_transform(tensor, height=12, width=12):
     #print('to_reshape', tensor.shape)
     tensor = tensor.transpose(0, 1)
     #print('transpose', tensor.shape)
@@ -44,7 +47,13 @@ def reshape_transform(tensor, height=14, width=14):
 
 def load_saved_model(saved_model_name, model):
     checkpoint = torch.load(saved_model_name)
-    model.load_state_dict(checkpoint['state_dict'])
+    state_dict = checkpoint['state_dict']
+
+    if 'densenet' in saved_model_name:
+        for key in list(state_dict.keys()):
+            state_dict[key.replace('module.', '')] = state_dict.pop(key)
+
+    model.load_state_dict(state_dict)
 
     for param in model.parameters():
         param.requires_grad = False
@@ -52,13 +61,13 @@ def load_saved_model(saved_model_name, model):
     return model
 
 
-model = CTranModel(num_labels, use_lmt, device,'tv_resnet101', pos_emb, layers, heads, dropout, no_x_features, grad_cam=True)
+model = CTranModel(num_labels, use_lmt, device,'densenet', pos_emb, layers, heads, dropout, no_x_features, grad_cam=True)
 
 model = load_saved_model(model_path, model)
 #print(model.self_attn_layers)
 
 rgb_img = cv2.imread(image_path, 1)[:, :, ::-1]
-rgb_img = cv2.resize(rgb_img, (448, 448))
+rgb_img = cv2.resize(rgb_img, (384, 384))
 rgb_img = np.float32(rgb_img) / 255
 input_tensor = preprocess_image(rgb_img, mean=[0.485, 0.456, 0.406],
                                 std=[0.229, 0.224, 0.225])
@@ -79,7 +88,7 @@ cam = ScoreCAM(model=model,
                reshape_transform=reshape_transform)
 # ablation_layer=AblationLayerVit)
 
-target_class = 4
+target_class = 7
 print(pred[0, target_class].item())
 
 targets = [ClassifierOutputTarget(target_class)]

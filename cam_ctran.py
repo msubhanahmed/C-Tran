@@ -29,7 +29,13 @@ def reshape_transform(tensor, height=12, width=12):
 
 def load_saved_model(saved_model_name, model):
     checkpoint = torch.load(saved_model_name)
-    model.load_state_dict(checkpoint['state_dict'])
+    state_dict = checkpoint['state_dict']
+
+    if 'densenet' in saved_model_name:
+        for key in list(state_dict.keys()):
+            state_dict[key.replace('module.', '')] = state_dict.pop(key)
+
+    model.load_state_dict(state_dict)
 
     for param in model.parameters():
         param.requires_grad = True
@@ -61,6 +67,7 @@ class FeatureExtractor(nn.Module):
 # Create model
 num_labels = 20
 use_lmt = False
+backbone_model = 'densenet'
 device = torch.device('cuda')
 pos_emb = False
 
@@ -68,9 +75,10 @@ layers = 3
 heads = 4
 dropout = 0.1
 no_x_features = False
-model_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\codes\\trained_models\\c-tran\\best_model.pt'
+model_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\codes\\trained_models\\c_tran' \
+             '\\merged.3layer.bsz_64.adam1e-05.lmt.unk_loss.densenet_384_b32\\best_model.pt'
 
-model = CTranModel(num_labels, use_lmt, device, pos_emb, layers, heads, dropout, no_x_features, grad_cam=True)
+model = CTranModel(num_labels, use_lmt, device, backbone_model, pos_emb, layers, heads, dropout, no_x_features, grad_cam=True)
 model = load_saved_model(model_path, model)
 #print(model)
 
@@ -79,7 +87,7 @@ model.cuda()
 print(dict([*model.named_modules()]))
 
 # Read and prepare image
-image_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets\\RIADD_cropped\\Training_Set\\Training\\82.png'
+image_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets\\RIADD_cropped\\Training_Set\\Training\\12.png'
 #image_path = 'C:\\Users\\AI\Desktop\\student_Manuel\\datasets\\STARE\\all_images_crop\\im0045.png'
 #image_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets\\ARIA\\all_images_crop\\aria_d_15_22.tif'
 rgb_img = cv2.imread(image_path, 1)[:, :, ::-1]
