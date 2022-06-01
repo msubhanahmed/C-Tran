@@ -260,6 +260,8 @@ def get_data(args):
             val_data = data.iloc[val_idx, :].reset_index(drop=True)
             break
 
+        val_data.to_csv('val_data.csv')
+
         # Augment dataset
         x, y = rutils.resample_dataset(train_data.iloc[:, :4], train_data.iloc[:, 4:], args.resample_algorithm, args.resample_perc)
         train_data = x.join(y)

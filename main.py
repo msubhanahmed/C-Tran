@@ -51,7 +51,7 @@ if __name__ == '__main__':
     model = model.to(device)
 
     if args.inference:
-        model = load_saved_model(args.saved_model_name,model)
+        model = load_saved_model(args.saved_model_name, model)
         if test_loader is not None:
             data_loader = test_loader
         else:

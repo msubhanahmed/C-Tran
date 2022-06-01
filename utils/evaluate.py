@@ -53,13 +53,21 @@ def compute_metrics(args,all_predictions,all_targets,all_masks,loss,loss_unk,ela
         odir_score = (all_auc + all_f1 + all_kappa) / 3.0
 
     if metrics_per_class:
-        scores = np.zeros((4, all_targets.size(dim=1)))
+        scores = np.zeros((5, all_targets.size(dim=1)))
         for idx in range(all_targets.size(dim=1)):
-            scores[0, idx] = metrics.precision_score(all_targets[:, idx], (all_predictions[:, idx] > 0.5))
-            scores[1, idx] = metrics.recall_score(all_targets[:, idx], (all_predictions[:, idx] > 0.5))
-            scores[2, idx] = metrics.f1_score(all_targets[:, idx], (all_predictions[:, idx] > 0.5))
-            scores[3, idx] = metrics.roc_auc_score(all_targets[:, idx], all_predictions[:, idx])
-        print(scores)
+            scores[0, idx] = metrics.accuracy_score(all_targets[:, idx], (all_predictions[:, idx] > 0.5))
+            scores[1, idx] = metrics.precision_score(all_targets[:, idx], (all_predictions[:, idx] > 0.5))
+            scores[2, idx] = metrics.recall_score(all_targets[:, idx], (all_predictions[:, idx] > 0.5))
+            scores[3, idx] = metrics.f1_score(all_targets[:, idx], (all_predictions[:, idx] > 0.5))
+            scores[4, idx] = metrics.roc_auc_score(all_targets[:, idx], all_predictions[:, idx])
+
+        for idx in range(all_targets.size(dim=1)):
+            for idx_metric in range(0, 5):
+                print(scores[idx_metric, idx], end=',')
+            print('')
+
+        np.savetxt('all_predictions.csv', all_predictions.numpy(), delimiter=',')
+
 
     optimal_threshold = 0.5
 
