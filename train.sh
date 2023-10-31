@@ -27,4 +27,6 @@ pip install -U albumentations
 pip install scikit-multilearn
 pip install -U iterative-stratification
 
-python main.py --batch_size 16  --lr 0.00001 --optim 'adam' --layers 3  --dataset 'custom' --use_lmt --grad_ac_step 2 --dataroot /home/kunet.ae/100058256/datasets/ --results_dir /home/kunet.ae/100058256/codes/trained_models/c_tran/  --loss bce_poly --poly_eps 2.0 --img_size 384 --backbone 'densenet' --name 'densenet_bce_poly_2' --run_platform local_run
+!python /kaggle/working/C-Tran/main.py --batch_size 16  --lr 0.00001 --optim 'adam' --layers 3 --dataset 'custom' --use_lmt --grad_ac_step 2 --dataroot /kaggle/input/fyp-dataset-list --results_dir /kaggle/working/  --loss bce_poly --poly_eps 2.0 --img_size 384 --backbone 'densenet' --name 'densenet_bce_poly_2' --run_platform kaggle
+#!python /kaggle/working/C-Tran/main.py --batch_size 16  --lr 0.00001 --optim 'adam' --layers 3 --dataset 'custom' --use_lmt --grad_ac_step 2 --dataroot /kaggle/input/fyp-dataset-list --results_dir /kaggle/working/  --loss bce_poly --poly_eps 2.0 --img_size 384 --backbone 'densenet' --name 'densenet_bce_poly_2' --run_platform kaggle
+#python main.py --batch_size 16  --lr 0.00001 --optim 'adam' --layers 3  --dataset 'custom' --use_lmt --grad_ac_step 2 --dataroot /home/kunet.ae/100058256/datasets/ --results_dir /home/kunet.ae/100058256/codes/trained_models/c_tran/  --loss bce_poly --poly_eps 2.0 --img_size 384 --backbone 'densenet' --name 'densenet_bce_poly_2' --run_platform local_run
