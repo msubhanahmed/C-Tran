@@ -372,7 +372,7 @@ def get_data(args):
     elif dataset == 'odir':
         IMG_SIZE = args.img_size
 
-        if args.local_run:
+        if args.run_platform == "local":
             data_root = 'C:\\Users\\MSA\\Downloads'
 
             img_path = os.path.join('file_list.csv')
