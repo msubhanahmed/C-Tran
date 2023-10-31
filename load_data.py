@@ -303,7 +303,7 @@ def get_data(args):
         train_dataset = MergedDataset(train_data, imgs_path, transform_train, known_labels=args.train_known_labels,testing=False)
         valid_dataset = MergedDataset(val_data, imgs_path, transform_val, known_labels=args.test_known_labels,testing=True)
 
-    elif dataset == 'odir':
+    elif dataset == 'odir2':
         IMG_SIZE = args.img_size
 
         if args.local_run:
@@ -369,7 +369,7 @@ def get_data(args):
                                       testing=False)
         valid_dataset = OdirDataset(val_data, img_path, transform_val, known_labels=args.test_known_labels,
                                       testing=True)
-    elif dataset == 'custom':
+    elif dataset == 'odir':
         IMG_SIZE = args.img_size
 
         if args.local_run:
