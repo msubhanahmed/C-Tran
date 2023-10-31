@@ -20,6 +20,7 @@ from dataloaders.cub312_dataset import CUBDataset
 from dataloaders.rfmid_dataset import RFMiDDataset
 from dataloaders.merged_dataset import MergedDataset
 from dataloaders.odir_dataset import OdirDataset
+from dataloaders.msa_dataset import MsaDataset
 from resampling import utils as rutils
 
 #from datasamplers.stratified_sampler import StratifiedBatchSampler
@@ -368,6 +369,65 @@ def get_data(args):
                                       testing=False)
         valid_dataset = OdirDataset(val_data, img_path, transform_val, known_labels=args.test_known_labels,
                                       testing=True)
+    elif dataset == 'custom':
+        IMG_SIZE = args.img_size
+
+        if args.local_run:
+            data_root = 'C:\\Users\\MSA\\Downloads'
+
+            img_path = os.path.join('file_list.csv')
+            labels_path = os.path.join(data_root,'file_list.csv')
+        else:
+            img_path = os.path.join(data_root, 'images')
+            labels_path = os.path.join(data_root, 'files_list.csv')
+
+        data = pd.read_csv(labels_path)
+        folds = MultilabelStratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+        for (train_idx, val_idx) in folds.split(data.iloc[:, 0], data.iloc[:, 1:]):
+            train_data = data.iloc[train_idx, :].reset_index(drop=True)
+            val_data = data.iloc[val_idx, :].reset_index(drop=True)
+            break
+
+        # Augment dataset
+        x, y = rutils.resample_dataset(pd.DataFrame(train_data.iloc[:, 0]), train_data.iloc[:, 1:], 'ml_ros', args.resample_perc)
+
+        print('original shape')
+        print(train_data.shape)
+
+        train_data = x.join(y)
+
+        print('new shape')
+        print(train_data.shape)
+
+        transform_train = tw(ab.Compose([
+            # albumentations.RandomResizedCrop(image_size, image_size, scale=(0.85, 1), p=1),
+            ab.Resize(IMG_SIZE, IMG_SIZE),
+            ab.HorizontalFlip(p=0.5),
+            ab.VerticalFlip(p=0.5),
+            ab.Rotate(limit=30),
+            ab.MedianBlur(blur_limit=7, p=0.3),
+            ab.GaussNoise(var_limit=(0, 0.15 * 255), p=0.5),
+            ab.HueSaturationValue(hue_shift_limit=10, sat_shift_limit=10, val_shift_limit=10, p=0.3),
+            ab.RandomBrightnessContrast(brightness_limit=(-0.2, 0.2), contrast_limit=(-0.2, 0.2), p=0.3),
+            ab.Cutout(max_h_size=20, max_w_size=20, num_holes=5, p=0.5),
+            ab.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225],
+            ),
+            abp.transforms.ToTensorV2(),
+        ]))
+
+        transform_val = tw(ab.Compose([
+            ab.Resize(IMG_SIZE, IMG_SIZE),
+            ab.Normalize(),
+            abp.transforms.ToTensorV2(),
+        ]))
+
+        train_dataset = OdirDataset(train_data, img_path, transform_train, known_labels=args.train_known_labels,
+                                      testing=False)
+        valid_dataset = OdirDataset(val_data, img_path, transform_val, known_labels=args.test_known_labels,
+                                      testing=True)
+    
     else:
         print('no dataset avail')
         exit(0)
