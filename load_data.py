@@ -369,7 +369,7 @@ def get_data(args):
                                       testing=False)
         valid_dataset = OdirDataset(val_data, img_path, transform_val, known_labels=args.test_known_labels,
                                       testing=True)
-    elif dataset == 'odir':
+    elif dataset == 'custom':
         IMG_SIZE = args.img_size
 
         if args.run_platform == "local":
