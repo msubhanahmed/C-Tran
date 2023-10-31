@@ -6,7 +6,7 @@ from pdb import set_trace as stop
 
 def get_args(parser,eval=False):
     parser.add_argument('--dataroot', type=str, default='./data/')
-    parser.add_argument('--dataset', type=str, choices=['coco', 'voc','coco1000','nus','vg','news','cub', 'rfmid', 'merged', 'odir'], default='merged')
+    parser.add_argument('--dataset', type=str, choices=['custom','coco', 'voc','coco1000','nus','vg','news','cub', 'rfmid', 'merged', 'odir'], default='merged')
     parser.add_argument('--workers', type=int, default=10)
     parser.add_argument('--results_dir', type=str, default='results/')
     parser.add_argument('--test_known', type=int, default=0)
@@ -99,6 +99,9 @@ def get_args(parser,eval=False):
         args.num_labels = 20
     elif args.dataset == 'odir':
         args.num_labels = 8
+    elif args.dataset == 'custom':
+        args.num_labels = 5
+
     else:
         print('dataset not included')
         exit()
