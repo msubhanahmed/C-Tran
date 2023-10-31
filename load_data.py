@@ -423,9 +423,9 @@ def get_data(args):
             abp.transforms.ToTensorV2(),
         ]))
 
-        train_dataset = OdirDataset(train_data, img_path, transform_train, known_labels=args.train_known_labels,
+        train_dataset = MsaDataset(train_data, img_path, transform_train, known_labels=args.train_known_labels,
                                       testing=False)
-        valid_dataset = OdirDataset(val_data, img_path, transform_val, known_labels=args.test_known_labels,
+        valid_dataset = MsaDataset(val_data, img_path, transform_val, known_labels=args.test_known_labels,
                                       testing=True)
     
     else:
