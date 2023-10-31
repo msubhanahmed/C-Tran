@@ -379,7 +379,7 @@ def get_data(args):
             labels_path = os.path.join(data_root,'file_list.csv')
         else:
             img_path = os.path.join(data_root, 'images')
-            labels_path = os.path.join(data_root, 'files_list.csv')
+            labels_path = os.path.join(data_root, 'file_list.csv')
 
         data = pd.read_csv(labels_path)
         folds = MultilabelStratifiedKFold(n_splits=5, shuffle=True, random_state=42)
