@@ -51,7 +51,7 @@ class MsaDataset(torch.utils.data.Dataset):
                     if j > yend:
                         yend = j
         cropped_image = img[xstart:xend, ystart:yend]
-        image = Image.fromarray(image).convert("RGB")
+        image = Image.fromarray(cropped_image).convert("RGB")
 
 
         if self.image_transform:
