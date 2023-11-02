@@ -23,36 +23,14 @@ class MsaDataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         name = self.img_names[index]
         img = cv.imread(name)
-
         gray_image = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
         laplacian = cv.Laplacian(gray_image, cv.CV_64F)
-        laplacian_abs = cv.convertScaleAbs(laplacian)
-
         threshold_value = 1
-        _, final_connected_edges = cv.threshold(laplacian_abs, threshold_value, 255, cv.THRESH_BINARY)
-
-        height = len(final_connected_edges)
-        width = len(final_connected_edges[0])
-
-        xstart = int(height)
-        xend = int(-10)
-        ystart = int(width)
-        yend = int(-10)
-
-        for i in range(height):
-            for j in range(width):
-                if final_connected_edges[i][j] == 255:
-                    if i < xstart:
-                        xstart = i
-                    if i > xend:
-                        xend = i
-                    if j < ystart:
-                        ystart = j
-                    if j > yend:
-                        yend = j
-        cropped_image = img[xstart:xend, ystart:yend]
-        image = Image.fromarray(cropped_image).convert("RGB")
-
+        _, final_connected_edges = cv.threshold(np.uint8(np.abs(laplacian)), threshold_value, 255, cv.THRESH_BINARY)
+        coords = np.column_stack(np.where(final_connected_edges == 255))
+        x, y, w, h = cv.boundingRect(coords)
+        cropped_image = img[x:x+w, y:y+h]
+        image = Image.fromarray(cv.cvtColor(cropped_image, cv.COLOR_BGR2RGB))
 
         if self.image_transform:
             image = self.image_transform(image)
