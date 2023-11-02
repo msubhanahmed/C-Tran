@@ -47,6 +47,8 @@ if __name__ == '__main__':
     if torch.cuda.device_count() > 1:
         print("Using", torch.cuda.device_count(), "GPUs!")
         model = nn.DataParallel(model)
+    else: 
+        print("No GPU Found !")
 
     model = model.to(device)
 
