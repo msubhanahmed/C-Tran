@@ -5,6 +5,7 @@ import numpy as np
 
 from PIL import Image
 from dataloaders.data_utils import get_unk_mask_indices
+import cv2 as cv
 
 
 class MsaDataset(torch.utils.data.Dataset):
@@ -21,7 +22,37 @@ class MsaDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         name = self.img_names[index]
-        image = Image.open(name).convert('RGB')
+        img = cv.imread(name)
+
+        gray_image = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+        laplacian = cv.Laplacian(gray_image, cv.CV_64F)
+        laplacian_abs = cv.convertScaleAbs(laplacian)
+
+        threshold_value = 1
+        _, final_connected_edges = cv.threshold(laplacian_abs, threshold_value, 255, cv.THRESH_BINARY)
+
+        height = len(final_connected_edges)
+        width = len(final_connected_edges[0])
+
+        xstart = int(height)
+        xend = int(-10)
+        ystart = int(width)
+        yend = int(-10)
+
+        for i in range(height):
+            for j in range(width):
+                if final_connected_edges[i][j] == 255:
+                    if i < xstart:
+                        xstart = i
+                    if i > xend:
+                        xend = i
+                    if j < ystart:
+                        ystart = j
+                    if j > yend:
+                        yend = j
+        cropped_image = img[xstart:xend, ystart:yend]
+        image = Image.fromarray(image).convert("RGB")
+
 
         if self.image_transform:
             image = self.image_transform(image)
