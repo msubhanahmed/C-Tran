@@ -56,3 +56,6 @@ class MsaDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.img_names)
+    
+    def get_labels(self):
+        return self.labels
