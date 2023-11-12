@@ -73,14 +73,15 @@ model.eval()
 #model.cuda()
 #print(dict([*model.named_modules()]))
 # Read and prepare image
-image_path = "2_right.jpg"
+image_path = "test.jpg"
 rgb_img = cv2.imread(image_path, 1)[:, :, ::-1]
 rgb_img = cv2.resize(rgb_img, (384, 384))
 rgb_img = np.float32(rgb_img) / 255
 input_tensor = preprocess_image(rgb_img, mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])
 
 # Get features and predictions
-preds = torch.sigmoid_(model(input_tensor.cuda()))
+#preds = torch.sigmoid_(model(input_tensor.cuda()))
+preds = torch.sigmoid_(model(input_tensor))
 ctran_features = FeatureExtractor(model, layers=["self_attn_layers.2.transformer_layer.norm1"])#'backbone.base_network.layer4.2.bn3'])#'backbone.base_network.avgpool']) #'"self_attn_layers.2.transformer_layer.norm1"])
 #features = ctran_features(input_tensor.cuda())
 features = ctran_features(input_tensor)

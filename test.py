@@ -23,7 +23,7 @@ no_x_features = False
 
 
 
-model_path = 'best_model.pt'
+model_path = 'best_model-vgg600.pt'
 
 
 def reshape_transform(tensor, height=12, width=12):
@@ -45,7 +45,8 @@ def load_saved_model(saved_model_name, model):
     return model
 
 print("Loading Model...")
-model = CTranModel(5, use_lmt, device,'densenet', pos_emb, layers, heads, dropout, no_x_features, grad_cam=True)
+#model = CTranModel(5, use_lmt, device,'densenet', pos_emb, layers, heads, dropout, no_x_features, grad_cam=True)
+model = CTranModel(5, use_lmt, device,'vgg16', pos_emb, layers, heads, dropout, no_x_features, grad_cam=True)
 model = load_saved_model(model_path, model)
 model.eval()
 #print(model.self_attn_layers)
@@ -67,7 +68,7 @@ for i in os.listdir("validation"):
         x, y, w, h = cv.boundingRect(coords)
         cropped_image = img[x:x+w, y:y+h]
 
-        rgb_img = cv.resize(cropped_image, (384, 384))
+        rgb_img = cv.resize(cropped_image, (600, 600))
         rgb_img = np.float32(rgb_img) / 255
         input_tensor = preprocess_image(rgb_img, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         mask_in = torch.zeros(1, 5)

@@ -44,7 +44,7 @@ if __name__ == '__main__':
 
     print(args.model_name)
 
-    if torch.cuda.device_count() > 1:
+    if torch.cuda.device_count() >= 1:
         print("Using", torch.cuda.device_count(), "GPUs!")
         model = nn.DataParallel(model)
     else: 
