@@ -37,7 +37,7 @@ for param in model.parameters():
 
 model.eval()
 
-image_path = 'kaz5.PNG'
+image_path = '/kaggle/input/fyp-dataset/validation/D/107_right.jpg'
 
 rgb_img = cv2.imread(image_path, 1)[:, :, ::-1]
 rgb_img = cv2.resize(rgb_img, (224, 224))

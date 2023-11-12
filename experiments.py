@@ -4,7 +4,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-dataset_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets\\RIADD_cropped\\Training_Set\\Training'
+dataset_path = '/kaggle/input/fyp-dataset/validation/D'
 
 
 smallest_w = 1000000

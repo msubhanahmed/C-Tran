@@ -54,7 +54,7 @@ model.eval()
 print(dict([*model.named_modules()]))
 
 # Read and prepare image
-image_path = 'kaz5.PNG'
+image_path = '/kaggle/input/fyp-dataset/validation/D/107_right.jpg'
 rgb_img = cv2.imread(image_path, 1)[:, :, ::-1]
 rgb_img = cv2.resize(rgb_img, (384, 384))
 rgb_img = np.float32(rgb_img) / 255
