@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import timm
 import cv2
@@ -100,7 +101,6 @@ print(heatmap.dtype)
 print(original_img.dtype)
 print(result.dtype)
 
-cv2.imshow('original', original_img)
-cv2.imshow('heatmap', heatmap)
-cv2.imshow(str(class_idx), result.astype('uint8'))
-cv2.waitKey(0)
+plt.imshow(original_img)
+plt.imshow(heatmap)
+plt.show()

@@ -1,5 +1,5 @@
 import argparse
-
+import matplotlib.pyplot as plt
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 
 from models import CTranModel
@@ -22,10 +22,8 @@ heads = 4
 dropout = 0.1
 no_x_features = False
 
-image_path = 'E:\\SemesterVII\\FYP-I\\C-Tran\\2_right.jpg'
-#image_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets\\ARIA\\all_images_crop\\aria_a_13_2.tif'
-#image_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets\\STARE\\all_images_crop\\im0264.png'
-model_path = 'E:\\SemesterVII\FYP-I\\C-Tran\\best_model.pt'
+image_path = '/kaggle/input/fyp-dataset/validation/D/107_right.jpg'
+model_path = '/kaggle/input/saved-models/best_model.pt'
 
 
 def reshape_transform(tensor, height=12, width=12):
