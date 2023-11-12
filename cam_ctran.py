@@ -86,7 +86,7 @@ model.cuda()
 print(dict([*model.named_modules()]))
 
 # Read and prepare image
-image_path = input("Image Path: ")
+image_path = "/kaggle/input/fyp-dataset/validation/D/107_right.jpg"
 #image_path = 'C:\\Users\\AI\Desktop\\student_Manuel\\datasets\\STARE\\all_images_crop\\im0045.png'
 #image_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets\\ARIA\\all_images_crop\\aria_d_15_22.tif'
 rgb_img = cv2.imread(image_path, 1)[:, :, ::-1]
