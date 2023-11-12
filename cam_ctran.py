@@ -11,17 +11,11 @@ from models import CTranModel
 
 
 def reshape_transform(tensor, height=12, width=12):
-    #return tensor
     print('to_reshape', tensor.shape)
     tensor = tensor.transpose(0, 1)
     print('transpose', tensor.shape)
-    result = tensor[:, :-20, :].reshape(tensor.size(0),
-                                               height, width, tensor.size(2))
-
+    result = tensor[:, :-20, :].reshape(tensor.size(0), height, width, tensor.size(2))
     print('middle step', result.shape)
-
-    # Bring the channels to the first dimension,
-    # like in CNNs.
     result = result.transpose(2, 3).transpose(1, 2)
     print('reshape_result', result.shape)
     return result
@@ -79,21 +73,15 @@ model_path = '/kaggle/input/saved-models/best_model.pt'
 
 model = CTranModel(num_labels, use_lmt, device, backbone_model, pos_emb, layers, heads, dropout, no_x_features, grad_cam=True)
 model = load_saved_model(model_path, model)
-#print(model)
-
 model.eval()
 model.cuda()
-print(dict([*model.named_modules()]))
-
+#print(dict([*model.named_modules()]))
 # Read and prepare image
 image_path = "/kaggle/input/fyp-dataset/validation/D/107_right.jpg"
-#image_path = 'C:\\Users\\AI\Desktop\\student_Manuel\\datasets\\STARE\\all_images_crop\\im0045.png'
-#image_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets\\ARIA\\all_images_crop\\aria_d_15_22.tif'
 rgb_img = cv2.imread(image_path, 1)[:, :, ::-1]
 rgb_img = cv2.resize(rgb_img, (384, 384))
 rgb_img = np.float32(rgb_img) / 255
-input_tensor = preprocess_image(rgb_img, mean=[0.485, 0.456, 0.406],
-                                std=[0.229, 0.224, 0.225])
+input_tensor = preprocess_image(rgb_img, mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])
 
 # Get features and predictions
 preds = torch.sigmoid_(model(input_tensor.cuda()))
