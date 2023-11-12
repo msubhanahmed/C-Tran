@@ -12,9 +12,9 @@ import torch
 import numpy as np
 import cv2
 
-num_labels = 20
+num_labels = 5
 use_lmt = False
-device = torch.device('cuda')
+device = torch.device('cpu')
 pos_emb = False
 
 layers = 3
@@ -22,8 +22,8 @@ heads = 4
 dropout = 0.1
 no_x_features = False
 
-image_path = '/kaggle/input/fyp-dataset/validation/D/107_right.jpg'
-model_path = '/kaggle/input/saved-models/best_model.pt'
+image_path = '2_right.jpg'
+model_path = 'best_model.pt'
 
 
 def reshape_transform(tensor, height=12, width=12):
@@ -43,7 +43,7 @@ def reshape_transform(tensor, height=12, width=12):
 
 
 def load_saved_model(saved_model_name, model):
-    checkpoint = torch.load(saved_model_name)
+    checkpoint = torch.load(saved_model_name,map_location=torch.device('cpu'))
     state_dict = checkpoint['state_dict']
 
     if 'densenet' in saved_model_name:
@@ -72,34 +72,22 @@ input_tensor = preprocess_image(rgb_img, mean=[0.485, 0.456, 0.406],
 mask_in = torch.zeros(1, 20)
 
 model.eval()
-model.cuda()
+#model.cuda()
 
 pred = torch.sigmoid_(model(input_tensor.to(device), mask_in.to(device))).detach().cpu()
 print(pred)
 
 target_layers = [model.self_attn_layers[-1].transformer_layer.norm1]
 
-cam = ScoreCAM(model=model,
-               target_layers=target_layers,
-               use_cuda=True,
-               reshape_transform=reshape_transform)
+cam = ScoreCAM(model=model, target_layers=target_layers, use_cuda=False,reshape_transform=reshape_transform)
 # ablation_layer=AblationLayerVit)
-
-target_class = 7
+target_class = 1
 print(pred[0, target_class].item())
-
 targets = [ClassifierOutputTarget(target_class)]
-
 cam.batch_size = 1
-
-grayscale_cam = cam(input_tensor=input_tensor,
-                   targets=targets,
-                   eigen_smooth=False,
-                   aug_smooth=False)
-
+grayscale_cam = cam(input_tensor=input_tensor,targets=targets, eigen_smooth=False,aug_smooth=False)
 grayscale_cam = grayscale_cam[0, :]
 cam_image = show_cam_on_image(rgb_img, grayscale_cam)
-
 img_name = image_path.split('\\')[-1].split('.')[0]
 
 cv2.imwrite(img_name + '_' + str(target_class) + '_' + "{:.3f}".format(pred[0, target_class].item()) + '.jpg', cam_image)

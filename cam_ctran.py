@@ -11,18 +11,14 @@ from models import CTranModel
 
 
 def reshape_transform(tensor, height=12, width=12):
-    print('to_reshape', tensor.shape)
     tensor = tensor.transpose(0, 1)
-    print('transpose', tensor.shape)
-    result = tensor[:, :-20, :].reshape(tensor.size(0), height, width, tensor.size(2))
-    print('middle step', result.shape)
+    result = tensor[:, :-num_labels, :].reshape(tensor.size(0),height, width, tensor.size(2))
     result = result.transpose(2, 3).transpose(1, 2)
-    print('reshape_result', result.shape)
     return result
 
 
 def load_saved_model(saved_model_name, model):
-    checkpoint = torch.load(saved_model_name)
+    checkpoint = torch.load(saved_model_name,map_location=torch.device('cpu'))
     state_dict = checkpoint['state_dict']
 
     if 'densenet' in saved_model_name:
@@ -62,22 +58,22 @@ class FeatureExtractor(nn.Module):
 num_labels = 5
 use_lmt = False
 backbone_model = 'densenet'
-device = torch.device('cuda')
+device = torch.device('cpu')
 pos_emb = False
 
 layers = 3
 heads = 4
 dropout = 0.1
 no_x_features = False
-model_path = '/kaggle/input/saved-models/best_model.pt'
+model_path = 'best_model.pt'
 
 model = CTranModel(num_labels, use_lmt, device, backbone_model, pos_emb, layers, heads, dropout, no_x_features, grad_cam=True)
 model = load_saved_model(model_path, model)
 model.eval()
-model.cuda()
+#model.cuda()
 #print(dict([*model.named_modules()]))
 # Read and prepare image
-image_path = "/kaggle/input/fyp-dataset/validation/D/107_right.jpg"
+image_path = "2_right.jpg"
 rgb_img = cv2.imread(image_path, 1)[:, :, ::-1]
 rgb_img = cv2.resize(rgb_img, (384, 384))
 rgb_img = np.float32(rgb_img) / 255
@@ -86,7 +82,8 @@ input_tensor = preprocess_image(rgb_img, mean=[0.485, 0.456, 0.406],std=[0.229, 
 # Get features and predictions
 preds = torch.sigmoid_(model(input_tensor.cuda()))
 ctran_features = FeatureExtractor(model, layers=["self_attn_layers.2.transformer_layer.norm1"])#'backbone.base_network.layer4.2.bn3'])#'backbone.base_network.avgpool']) #'"self_attn_layers.2.transformer_layer.norm1"])
-features = ctran_features(input_tensor.cuda())
+#features = ctran_features(input_tensor.cuda())
+features = ctran_features(input_tensor)
 
 print(preds)
 #print(features)
