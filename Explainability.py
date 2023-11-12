@@ -22,11 +22,10 @@ heads = 4
 dropout = 0.1
 no_x_features = False
 
-image_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets\\RIADD_cropped\\Training_Set\\Training\\542.png'
+image_path = 'E:\\SemesterVII\\FYP-I\\C-Tran\\2_right.jpg'
 #image_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets\\ARIA\\all_images_crop\\aria_a_13_2.tif'
 #image_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\datasets\\STARE\\all_images_crop\\im0264.png'
-model_path = 'C:\\Users\\AI\\Desktop\\student_Manuel\\codes\\trained_models\\c_tran' \
-             '\\merged.3layer.bsz_64.adam1e-05.lmt.unk_loss.densenet_384_b32\\best_model.pt'
+model_path = 'E:\\SemesterVII\FYP-I\\C-Tran\\best_model.pt'
 
 
 def reshape_transform(tensor, height=12, width=12):
