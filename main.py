@@ -74,9 +74,9 @@ if __name__ == '__main__':
         for i in all_targs:
             labels.append(i[torch.argmax(i)])
 
-        conf_matrix = confusion_matrix(all_targs, all_preds)
+        conf_matrix = confusion_matrix(labels, predictions)
         print("Classification Report:")
-        print(classification_report(all_targs, all_preds))
+        print(classification_report(labels, predictions))
         print("\nConfusion Matrix:")
         print(conf_matrix)
         sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', cbar=False, xticklabels=['Class 0', 'Class 1', 'Class 2', 'Class 3', 'Class 4'], yticklabels=['Class 0', 'Class 1', 'Class 2', 'Class 3', 'Class 4'])
