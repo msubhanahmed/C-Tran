@@ -22,8 +22,7 @@ dropout = 0.1
 no_x_features = False
 
 
-
-model_path = 'best_model-vgg600.pt'
+model_path = 'saved_models/best_model_dense_mlros_polybce.pt'
 
 
 def reshape_transform(tensor, height=12, width=12):
@@ -45,8 +44,8 @@ def load_saved_model(saved_model_name, model):
     return model
 
 print("Loading Model...")
-#model = CTranModel(5, use_lmt, device,'densenet', pos_emb, layers, heads, dropout, no_x_features, grad_cam=True)
-model = CTranModel(5, use_lmt, device,'vgg16', pos_emb, layers, heads, dropout, no_x_features, grad_cam=True)
+model = CTranModel(5, use_lmt, device,'densenet', pos_emb, layers, heads, dropout, no_x_features, grad_cam=True)
+#model = CTranModel(5, use_lmt, device,'vgg16', pos_emb, layers, heads, dropout, no_x_features, grad_cam=True)
 model = load_saved_model(model_path, model)
 model.eval()
 #print(model.self_attn_layers)
@@ -59,6 +58,7 @@ for i in os.listdir("validation"):
     print(i)
     for j in os.listdir("validation/"+i):
         #rgb_img = cv.imread(image_path, 1)[:, :, ::-1]
+        print(".",end='')
         img = cv.imread("validation/"+i+"/"+j)
         gray_image = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
         laplacian = cv.Laplacian(gray_image, cv.CV_64F)
@@ -68,13 +68,18 @@ for i in os.listdir("validation"):
         x, y, w, h = cv.boundingRect(coords)
         cropped_image = img[x:x+w, y:y+h]
 
-        rgb_img = cv.resize(cropped_image, (600, 600))
-        rgb_img = np.float32(rgb_img) / 255
+        #rgb_img = cv.resize(cropped_image, (600, 600))
+        rgb_img = np.float32(cropped_image) / 255
         input_tensor = preprocess_image(rgb_img, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         mask_in = torch.zeros(1, 5)
-        pred = torch.sigmoid_(model(input_tensor.to(device), mask_in.to(device))).detach().cpu()
-        predictions.append(torch.argmax(pred[0]))
-        labels.append(classes[i])
+        with torch.no_grad():
+            pred = torch.sigmoid_(model(input_tensor.to(device), mask_in.to(device))).detach().cpu()
+        #print(torch.argmax(pred[0]))
+        if pred[0][torch.argmax(pred[0])]>0.5:
+            #print(torch.argmax(pred[0]))
+            predictions.append(torch.argmax(pred[0]))
+            labels.append(classes[i])
+print("")
 print(predictions)
 print(labels)
 

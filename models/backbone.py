@@ -103,6 +103,7 @@ class VGG16(nn.Module):
 
         self.base_network = torchvision.models.vgg16(pretrained=True)
         self.features = 512
+        #self.features = 2208
 
     def forward(self, images):
         x = self.base_network.features(images)

@@ -13,7 +13,7 @@ class MsaDataset(torch.utils.data.Dataset):
 
         self.img_dir = img_dir
         self.img_names = data['Name'].values.astype(str)
-        self.labels = data.iloc[:, 1:].to_numpy(dtype=np.float)
+        self.labels = data.iloc[:, 1:].to_numpy(dtype=float)
         self.num_labels = 5
         self.known_labels = known_labels
         self.testing = testing
