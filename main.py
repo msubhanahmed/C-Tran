@@ -1,3 +1,6 @@
+from sklearn.metrics import classification_report, confusion_matrix
+import seaborn as sns
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import argparse,math,numpy as np
@@ -60,7 +63,16 @@ if __name__ == '__main__':
         all_preds,all_targs,all_masks,all_ids,test_loss,test_loss_unk = run_epoch(args,model,data_loader,None,1,'Testing', device)
         test_metrics = evaluate.compute_metrics(args,all_preds,all_targs,all_masks, test_loss,test_loss_unk,0,args.test_known_labels, metrics_per_class=True)
         print(test_metrics)
-
+        conf_matrix = confusion_matrix(all_targs, all_preds)
+        print("Classification Report:")
+        print(classification_report(all_targs, all_preds))
+        print("\nConfusion Matrix:")
+        print(conf_matrix)
+        sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', cbar=False, xticklabels=['Class 0', 'Class 1', 'Class 2', 'Class 3', 'Class 4'], yticklabels=['Class 0', 'Class 1', 'Class 2', 'Class 3', 'Class 4'])
+        plt.xlabel('Predicted')
+        plt.ylabel('True')
+        plt.title('Confusion Matrix Heatmap')
+        plt.savefig('confusion_matrix.png')
         exit(0)
 
     if args.freeze_backbone:
