@@ -63,6 +63,18 @@ if __name__ == '__main__':
         all_preds,all_targs,all_masks,all_ids,test_loss,test_loss_unk = run_epoch(args,model,data_loader,None,1,'Testing', device)
         test_metrics = evaluate.compute_metrics(args,all_preds,all_targs,all_masks, test_loss,test_loss_unk,0,args.test_known_labels, metrics_per_class=True)
         print(test_metrics)
+
+        print(all_preds)
+        print(all_targs)
+        predictions = []
+        labels = []
+        for i in all_preds:
+            if i[torch.argmax(i)]>0.5:
+            #print(torch.argmax(pred[0]))
+            predictions.append(torch.argmax(i))
+        for i in all_targs:
+            labels.append(i[torch.argmax(i)])
+
         conf_matrix = confusion_matrix(all_targs, all_preds)
         print("Classification Report:")
         print(classification_report(all_targs, all_preds))
