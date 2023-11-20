@@ -64,15 +64,14 @@ if __name__ == '__main__':
         test_metrics = evaluate.compute_metrics(args,all_preds,all_targs,all_masks, test_loss,test_loss_unk,0,args.test_known_labels, metrics_per_class=True)
         print(test_metrics)
 
-        print(all_preds)
-        print(all_targs)
+        print(len(all_preds))
+        print(len(all_targs))
         predictions = []
         labels = []
-        for i in all_preds:
-            if i[torch.argmax(i)]>0.5:
-                predictions.append(torch.argmax(i))
-        for i in all_targs:
-            labels.append(i[torch.argmax(i)])
+        for i in range(len(all_preds)):
+            if all_preds[i][torch.argmax(all_preds[i])]>0.5:
+                predictions.append(torch.argmax(all_preds[i]))
+                labels.append(torch.argmax(all_targs[i]))
 
         conf_matrix = confusion_matrix(labels, predictions)
         print("Classification Report:")
