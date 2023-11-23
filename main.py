@@ -69,7 +69,7 @@ if __name__ == '__main__':
         predictions = []
         labels = []
         for i in range(len(all_preds)):
-            if all_preds[i][torch.argmax(all_preds[i])]>0.5:
+            if all_preds[i][torch.argmax(all_preds[i])]>0:
                 predictions.append(torch.argmax(all_preds[i]))
                 labels.append(torch.argmax(all_targs[i]))
 
