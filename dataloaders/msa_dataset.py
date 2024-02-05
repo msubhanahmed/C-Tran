@@ -24,13 +24,28 @@ class MsaDataset(torch.utils.data.Dataset):
         name = self.img_names[index]
         img = cv.imread(name)
         gray_image = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-        laplacian = cv.Laplacian(gray_image, cv.CV_64F)
+        normalized_image = cv.normalize(gray_image, None, alpha=0, beta=255, norm_type=cv.NORM_MINMAX)
+        clahe = cv.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        contrast_enhanced = clahe.apply(normalized_image)
+        normalized_hist = exposure.equalize_hist(contrast_enhanced)
+        normalized_hist = (normalized_hist * 255).astype(np.uint8)
+        laplacian = cv.Laplacian(normalized_hist, cv.CV_64F)
         threshold_value = 1
         _, final_connected_edges = cv.threshold(np.uint8(np.abs(laplacian)), threshold_value, 255, cv.THRESH_BINARY)
         coords = np.column_stack(np.where(final_connected_edges == 255))
         x, y, w, h = cv.boundingRect(coords)
-        cropped_image = img[x:x+w, y:y+h]
+        cropped_image = img[x:x + w, y:y + h]
         image = Image.fromarray(cv.cvtColor(cropped_image, cv.COLOR_BGR2RGB))
+
+        # img = cv.imread(name)
+        # gray_image = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+        # laplacian = cv.Laplacian(gray_image, cv.CV_64F)
+        # threshold_value = 1
+        # _, final_connected_edges = cv.threshold(np.uint8(np.abs(laplacian)), threshold_value, 255, cv.THRESH_BINARY)
+        # coords = np.column_stack(np.where(final_connected_edges == 255))
+        # x, y, w, h = cv.boundingRect(coords)
+        # cropped_image = img[x:x+w, y:y+h]
+        # image = Image.fromarray(cv.cvtColor(cropped_image, cv.COLOR_BGR2RGB))
 
         if self.image_transform:
             image = self.image_transform(image)
