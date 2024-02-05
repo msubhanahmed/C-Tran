@@ -6,6 +6,7 @@ import numpy as np
 from PIL import Image
 from dataloaders.data_utils import get_unk_mask_indices
 import cv2 as cv
+from skimage import exposure
 
 
 class MsaDataset(torch.utils.data.Dataset):
