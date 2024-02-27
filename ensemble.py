@@ -42,7 +42,7 @@ print("Loading Model...")
 model = CTranModel(5, use_lmt, device,'vgg16', pos_emb, layers, heads, dropout, no_x_features, grad_cam=True)
 model = load_saved_model(model_path, model)
 model.eval()
-
+model.to(device)
 
 img_path    = os.path.join(data_root,      'images')
 labels_path = os.path.join(data_root,   'file_list.csv')
