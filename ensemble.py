@@ -61,15 +61,16 @@ for i in data.iterrows():
         pred = model(input_tensor.to(device), mask_in.to(device))
 
     prob = torch.sigmoid_(pred).detach().cpu()
-    output.append({"logits":pred.detach().cpu().tolist()[0],"prob":prob.tolist()[0],"label":np.argmax(i[1][1:].values)})
+    output.append({"logits":pred.detach().cpu().tolist()[0],"prob":prob.tolist()[0],"label":int(np.argmax(i[1][1:].values)[0])})
     break
 
 
 
-print(output)
-data = {'output': output}
 
-# Write the data to a JSON file
+data = {'output': output}
+print(output)
+
+
 file_path = "data.json"
 with open(file_path, "w") as json_file:
     json.dump(data, json_file, indent=4)
