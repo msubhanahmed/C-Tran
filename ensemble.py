@@ -12,7 +12,7 @@ print("Initalizing...")
 num_labels      = 5
 use_lmt         = False
 device          = torch.device('cuda:0')
-pos_emb         = True
+pos_emb         = False
 layers          = 3
 heads           = 4
 dropout         = 0
