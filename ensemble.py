@@ -58,7 +58,7 @@ for i in data.iterrows():
         pred = model(input_tensor.to(device), mask_in.to(device))
 
     prob = torch.sigmoid_(pred).detach().cpu()
-    output.append({"logits":pred,"prob":prob,"label",})
+    output.append({"logits":pred,"prob":prob,"label":np.argmax(i[1][1:].values)})
 
 
 
