@@ -16,7 +16,8 @@ layers          = 3
 heads           = 4
 dropout         = 0
 no_x_features   = False
-model_path      = 'saved_models/best_model-vgg600.pt'
+
+model_path      = '/kaggle/input/saved-models/best_model-vgg600.pt'
 data_root       = "/kaggle/input/fyp-dataset-list"
 
 def reshape_transform(tensor, height=12, width=12):
