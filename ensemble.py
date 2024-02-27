@@ -67,6 +67,9 @@ for i in data.iterrows():
 
 
 print(output)
+data = {'output': output}
+
+# Write the data to a JSON file
 file_path = "data.json"
 with open(file_path, "w") as json_file:
     json.dump(data, json_file, indent=4)
