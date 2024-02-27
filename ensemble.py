@@ -66,6 +66,7 @@ for i in data.iterrows():
 
 
 
+print(output)
 file_path = "data.json"
 with open(file_path, "w") as json_file:
     json.dump(data, json_file, indent=4)
