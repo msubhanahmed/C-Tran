@@ -62,6 +62,7 @@ for i in data.iterrows():
 
     prob = torch.sigmoid_(pred).detach().cpu()
     output.append({"logits":pred,"prob":prob,"label":np.argmax(i[1][1:].values)})
+    break
 
 
 
