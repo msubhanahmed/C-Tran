@@ -13,11 +13,11 @@ print("Initalizing...")
 num_labels = 5
 use_lmt = False
 device = torch.device('cpu')
-pos_emb = False
+pos_emb = True
 
 layers = 3
 heads = 4
-dropout = 0.1
+dropout = 0
 no_x_features = False
 
 
@@ -44,6 +44,7 @@ def load_saved_model(saved_model_name, model):
 
 print("Loading Model...")
 model = CTranModel(5, use_lmt, device,'vgg16', pos_emb, layers, heads, dropout, no_x_features, grad_cam=True)
+CTranModel(5,args.use_lmt, device, args.backbone, args.pos_emb,args.layers,args.heads,args.dropout,args.no_x_features)
 model = load_saved_model(model_path, model)
 model.eval()
 
