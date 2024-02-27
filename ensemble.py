@@ -59,10 +59,8 @@ for i in data.iterrows():
     mask_in = torch.zeros(1, 5)
     with torch.no_grad():
         pred = model(input_tensor.to(device), mask_in.to(device))
-
     prob = torch.sigmoid_(pred).detach().cpu()
     output.append({"logits":pred.detach().cpu().tolist()[0],"prob":prob.tolist()[0],"label":int(np.argmax(i[1][1:].values))})
-    break
 
 
 file_path = "data.json"
