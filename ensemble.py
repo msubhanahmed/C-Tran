@@ -38,7 +38,6 @@ def load_saved_model(saved_model_name, model):
 
 print("Loading Model...")
 model = CTranModel(5, use_lmt, device,'vgg16', pos_emb, layers, heads, dropout, no_x_features, grad_cam=True)
-CTranModel(5,args.use_lmt, device, args.backbone, args.pos_emb,args.layers,args.heads,args.dropout,args.no_x_features)
 model = load_saved_model(model_path, model)
 model.eval()
 
