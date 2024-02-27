@@ -14,18 +14,18 @@ module load python/3.9.6
 module load miniconda/3
 module load cuda/11.3
 
-pip install timm
-pip install einops
-pip install nltk
-pip install pillow
-pip install numpy
-pip install torch==1.8.0+cu111 torchvision==0.9.0+cu111 torchaudio==0.8.0 -f https://download.pytorch.org/whl/torch_stable.html
-pip install -U scikit-learn
-pip install pandas
-pip install tensorboard
-pip install -U albumentations
-pip install scikit-multilearn
-pip install -U iterative-stratification
+pip install -q timm
+pip install -q einops
+pip install -q nltk
+pip install -q pillow
+pip install -q numpy
+pip install -q torch==1.8.0+cu111 torchvision==0.9.0+cu111 torchaudio==0.8.0 -f https://download.pytorch.org/whl/torch_stable.html
+pip install -qU scikit-learn
+pip install -q pandas
+pip install -q tensorboard
+pip install -qU albumentations
+pip install -q scikit-multilearn
+pip install -qU iterative-stratification
 
 #!python /kaggle/working/C-Tran/main.py --batch_size 16  --lr 0.00001 --optim 'adam' --layers 3 --dataset 'custom' --use_lmt --grad_ac_step 2 --dataroot /kaggle/input/fyp-dataset-list --results_dir /kaggle/working/  --loss bce_poly --poly_eps 2.0 --img_size 384 --backbone 'densenet' --name 'densenet_bce_poly_2' --run_platform kaggle
 #!python /kaggle/working/C-Tran/main.py --batch_size 16  --lr 0.00001 --optim 'adam' --layers 3 --dataset 'custom' --use_lmt --grad_ac_step 2 --dataroot /kaggle/input/fyp-dataset-list --results_dir /kaggle/working/  --loss bce_poly --poly_eps 2.0 --img_size 384 --backbone 'densenet' --name 'densenet_bce_poly_2' --run_platform kaggle
