@@ -61,7 +61,7 @@ for i in data.iterrows():
         pred = model(input_tensor.to(device), mask_in.to(device))
 
     prob = torch.sigmoid_(pred).detach().cpu()
-    output.append({"logits":pred.detach().cpu().tolist(),"prob":prob.tolist(),"label":np.argmax(i[1][1:].values)})
+    output.append({"logits":pred.detach().cpu().tolist()[0],"prob":prob.tolist()[0],"label":np.argmax(i[1][1:].values)})
     break
 
 
