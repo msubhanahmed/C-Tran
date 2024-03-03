@@ -86,7 +86,7 @@ for i in data.iterrows():
     for i in new_name:
         new_root += "/"+i
     print(f"\r Filename: {new_root}" , end="")
-    pil_image = Image.open(new_root)resize((224, 224))
+    pil_image = Image.open(new_root).resize((224, 224))
     input_image = transform(pil_image).unsqueeze(0)
     with torch.no_grad():
         outputs = model(input_image)
