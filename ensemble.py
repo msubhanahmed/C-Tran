@@ -84,8 +84,8 @@ for i in data.iterrows():
     
     new_root  = "/kaggle/input/fyp-ii-preprocessed/Dataset"
     new_name  = i[1]['Name'].split("/")[4:]
-    for i in new_name:
-        new_root += "/"+i
+    for j in new_name:
+        new_root += "/" + j
     print(f"\r Filename: {new_root}" , end="")
     pil_image = Image.open(new_root).resize((224, 224))
     input_image = transform(pil_image).unsqueeze(0).to(device)
@@ -97,7 +97,7 @@ for i in data.iterrows():
         "C-logits": pred.detach().cpu().tolist()[0],
         "C-prob"  : prob.tolist()[0],
         "V-Probs" : outputs.logits.detach().cpu().tolist(),
-        "label":int(np.argmax(i[1][1:].values))})
+        "label"   : int(np.argmax(i[1][1:].values))})
     break
 
 file_path = "data.json"
