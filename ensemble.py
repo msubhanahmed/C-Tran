@@ -78,7 +78,7 @@ for i in data.iterrows():
     mask_in = torch.zeros(1, 5)
     with torch.no_grad():
         pred = model(input_tensor.to(device), mask_in.to(device))
-    prob = torch.sigmoid_(pred).detach().cpu()
+    prob = F.softmax(pred,dim=1).detach().cpu()
 
     # ------------------ ViT Inference ------------------ #
     
@@ -96,9 +96,9 @@ for i in data.iterrows():
     print(outputs,Vprob)
     output.append({
         "C-logits": pred.detach().cpu().tolist()[0],
-        "C-prob"  : prob.tolist(),
-        "V-logits": outputs, #.logits.detach().cpu().tolist()[0],
-        "V-Probs" : Vprob.tolist(),
+        "C-prob"  : prob.tolist()[0],
+        "V-logits": outputs.logits.detach().cpu().tolist()[0],
+        "V-Probs" : Vprob.tolist()[0],
         "label"   : int(np.argmax(i[1][1:].values))})
     break
 
