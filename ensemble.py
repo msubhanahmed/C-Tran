@@ -87,20 +87,18 @@ for i in data.iterrows():
     new_name  = i[1]['Name'].split("/")[4:]
     for j in new_name:
         new_root += "/" + j
-    print(f"\r Filename: {new_root}" , end="")
     pil_image = Image.open(new_root).resize((224, 224))
     input_image = transform(pil_image).unsqueeze(0).to(device)
     with torch.no_grad():
         outputs = ViTmodel(input_image)
-    Vprob = F.softmax(outputs.logits,dim=1).detach().cpu() #torch.argmax(outputs.logits, dim=1).item()
-    print(outputs,Vprob)
+    Vprob = F.softmax(outputs.logits,dim=1).detach().cpu()
     output.append({
+        "Filename": new_root,
         "C-logits": pred.detach().cpu().tolist()[0],
         "C-prob"  : prob.tolist()[0],
         "V-logits": outputs.logits.detach().cpu().tolist()[0],
         "V-Probs" : Vprob.tolist()[0],
         "label"   : int(np.argmax(i[1][1:].values))})
-    break
 
 file_path = "data.json"
 with open(file_path, "w") as json_file:
