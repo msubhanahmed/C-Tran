@@ -91,12 +91,13 @@ for i in data.iterrows():
     input_image = transform(pil_image).unsqueeze(0).to(device)
     with torch.no_grad():
         outputs = ViTmodel(input_image)
-    predicted_label = torch.argmax(outputs.logits, dim=1).item()
+    Vprob = torch.sigmoid_(outputs.logits).detach().cpu() #torch.argmax(outputs.logits, dim=1).item()
 
     output.append({
         "C-logits": pred.detach().cpu().tolist()[0],
         "C-prob"  : prob.tolist()[0],
-        "V-Probs" : outputs.logits.detach().cpu().tolist(),
+        "V-logits": outputs.logits.detach().cpu().tolist()[0],
+        "V-Probs" : Vprob.tolist()[0]
         "label"   : int(np.argmax(i[1][1:].values))})
     break
 
