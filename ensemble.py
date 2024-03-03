@@ -51,6 +51,7 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from transformers import ViTForImageClassification
 from transformers import ViTFeatureExtractor
+import torch.nn.functional as F
 
 model_directory = "/kaggle/input/saved-models/ViT/ViT"
 feature_extractor = ViTFeatureExtractor.from_pretrained(model_directory)
@@ -91,12 +92,12 @@ for i in data.iterrows():
     input_image = transform(pil_image).unsqueeze(0).to(device)
     with torch.no_grad():
         outputs = ViTmodel(input_image)
-    Vprob = torch.sigmoid_(outputs.logits).detach().cpu() #torch.argmax(outputs.logits, dim=1).item()
+    Vprob = F.softmax(outputs.logits,dim=1).detach().cpu() #torch.argmax(outputs.logits, dim=1).item()
 
     output.append({
         "C-logits": pred.detach().cpu().tolist()[0],
         "C-prob"  : prob.tolist(),
-        "V-logits": outputs.logits.detach().cpu().tolist()[0],
+        "V-logits": outputs #.logits.detach().cpu().tolist()[0],
         "V-Probs" : Vprob.tolist(),
         "label"   : int(np.argmax(i[1][1:].values))})
     break
