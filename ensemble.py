@@ -97,7 +97,7 @@ for i in data.iterrows():
         "C-logits": pred.detach().cpu().tolist()[0],
         "C-prob"  : prob.tolist()[0],
         "V-logits": outputs.logits.detach().cpu().tolist()[0],
-        "V-Probs" : Vprob.tolist()[0]
+        "V-Probs" : Vprob.tolist()[0],
         "label"   : int(np.argmax(i[1][1:].values))})
     break
 
