@@ -9,6 +9,7 @@ import json
 import os
 
 print("Initalizing...")
+# ------------------ CTran Intilization ------------------ #
 num_labels      = 5
 use_lmt         = False
 device          = torch.device('cuda:0')
@@ -18,7 +19,7 @@ heads           = 4
 dropout         = 0
 no_x_features   = False
 
-model_path      = '/kaggle/input/saved-models/best_model-vgg600.pt'
+model_path      = '/kaggle/input/saved-models/CTran-VGG-P.pt'
 data_root       = "/kaggle/input/fyp-dataset-list"
 
 def reshape_transform(tensor, height=12, width=12):
@@ -44,6 +45,19 @@ model = load_saved_model(model_path, model)
 model.eval()
 model.to(device)
 
+# ------------------ ViT Intilization ------------------ #
+
+import torchvision.datasets as datasets
+import torchvision.transforms as transforms
+from transformers import ViTForImageClassification
+from transformers import ViTFeatureExtractor
+
+model_directory = "/kaggle/input/saved-models/ViT/ViT"
+feature_extractor = ViTFeatureExtractor.from_pretrained(model_directory)
+model = ViTForImageClassification.from_pretrained(model_directory)
+transform = transforms.Compose([ transforms.Resize((224, 224)),transforms.ToTensor(), ])
+
+# ------------------ Dataset Intilization ------------------ #
 img_path    = os.path.join(data_root,      'images')
 labels_path = os.path.join(data_root,   'file_list.csv')
 data = pd.read_csv(labels_path)
@@ -55,13 +69,35 @@ for i in data.iterrows():
     pil_image = Image.open(i[1]['Name']).resize((224, 224))
     image_array = np.array(pil_image)
     rgb_img = np.float32(image_array)/255.0
+
+    # ------------------ Ctran Inference ------------------ #
+
     input_tensor = preprocess_image(rgb_img, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     mask_in = torch.zeros(1, 5)
     with torch.no_grad():
         pred = model(input_tensor.to(device), mask_in.to(device))
     prob = torch.sigmoid_(pred).detach().cpu()
-    output.append({"logits":pred.detach().cpu().tolist()[0],"prob":prob.tolist()[0],"label":int(np.argmax(i[1][1:].values))})
 
+    # ------------------ ViT Inference ------------------ #
+    
+    
+    new_root  = "/kaggle/input/fyp-ii-preprocessed/Dataset"
+    new_name  = i[1]['Name'].split("/")[4:]
+    for i in new_name:
+        new_root += "/"+i
+    print(f"\r Filename: {new_root}" , end="")
+    pil_image = Image.open(new_root)resize((224, 224))
+    input_image = transform(pil_image).unsqueeze(0)
+    with torch.no_grad():
+        outputs = model(input_image)
+    predicted_label = torch.argmax(outputs.logits, dim=1).item()
+
+    output.append({
+        "C-logits": pred.detach().cpu().tolist()[0],
+        "C-prob"  : prob.tolist()[0],
+        "V-Probs" : outputs.logits.detach().cpu().tolist(),
+        "label":int(np.argmax(i[1][1:].values))})
+    break
 
 file_path = "data.json"
 with open(file_path, "w") as json_file:
