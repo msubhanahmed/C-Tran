@@ -3,7 +3,6 @@ C-Tran.zip
 *.pyc
 *.csv
 *.log
-*.json
 C-Tran.rar
 /.idea
 *.pt
