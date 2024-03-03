@@ -54,9 +54,10 @@ from transformers import ViTFeatureExtractor
 
 model_directory = "/kaggle/input/saved-models/ViT/ViT"
 feature_extractor = ViTFeatureExtractor.from_pretrained(model_directory)
-model = ViTForImageClassification.from_pretrained(model_directory)
+ViTmodel = ViTForImageClassification.from_pretrained(model_directory)
 transform = transforms.Compose([ transforms.Resize((224, 224)),transforms.ToTensor(), ])
-
+ViTmodel.eval()
+ViTmodel.to(device)
 # ------------------ Dataset Intilization ------------------ #
 img_path    = os.path.join(data_root,      'images')
 labels_path = os.path.join(data_root,   'file_list.csv')
@@ -87,9 +88,9 @@ for i in data.iterrows():
         new_root += "/"+i
     print(f"\r Filename: {new_root}" , end="")
     pil_image = Image.open(new_root).resize((224, 224))
-    input_image = transform(pil_image).unsqueeze(0)
+    input_image = transform(pil_image).unsqueeze(0).to(device)
     with torch.no_grad():
-        outputs = model(input_image)
+        outputs = ViTmodel(input_image)
     predicted_label = torch.argmax(outputs.logits, dim=1).item()
 
     output.append({
