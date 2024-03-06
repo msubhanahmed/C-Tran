@@ -404,12 +404,6 @@ def get_data(args):
             ab.Resize(IMG_SIZE, IMG_SIZE),
             ab.HorizontalFlip(p=0.5),
             ab.VerticalFlip(p=0.5),
-            ab.Rotate(limit=30),
-            ab.MedianBlur(blur_limit=7, p=0.3),
-            ab.GaussNoise(var_limit=(0, 0.15 * 255), p=0.5),
-            ab.HueSaturationValue(hue_shift_limit=10, sat_shift_limit=10, val_shift_limit=10, p=0.3),
-            ab.RandomBrightnessContrast(brightness_limit=(-0.2, 0.2), contrast_limit=(-0.2, 0.2), p=0.3),
-            ab.Cutout(max_h_size=20, max_w_size=20, num_holes=5, p=0.5),
             ab.Normalize(
                 mean=[0.485, 0.456, 0.406],
                 std=[0.229, 0.224, 0.225],
