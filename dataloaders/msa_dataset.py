@@ -20,6 +20,7 @@ class MsaDataset(torch.utils.data.Dataset):
         self.testing = testing
         self.image_transform = image_transform
         self.epoch = 1
+        print(self.known_labels)
 
     def __getitem__(self, index):
         name = self.img_names[index]
