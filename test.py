@@ -52,7 +52,7 @@ print("Preparing...")
 classes={'N':0,'H':1,'M':2,'G':3,'D':4}
 predictions = []
 labels = []
-for i in os.listdir("validation"):
+for i in os.listdir("/kaggle/input/fyp-dataset/validation"):
     print(i)
     for j in os.listdir("validation/"+i):
         #rgb_img = cv.imread(image_path, 1)[:, :, ::-1]
