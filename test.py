@@ -11,18 +11,15 @@ import seaborn as sns
 
 
 print("Initalizing...")
-num_labels = 5
-use_lmt = False
-device = torch.device('cpu')
-pos_emb = False
-
-layers = 3
-heads = 4
-dropout = 0.1
-no_x_features = False
-
-
-model_path = 'saved_models/best_model_dense_mlros_polybce.pt'
+num_labels      = 5
+use_lmt         = False
+device          = torch.device('cuda:0')
+pos_emb         = False
+layers          = 3
+heads           = 4
+dropout         = 0
+no_x_features   = False
+model_path      = '/kaggle/input/saved-models/CTran-VGG-P.pt'
 
 
 def reshape_transform(tensor, height=12, width=12):
@@ -44,10 +41,11 @@ def load_saved_model(saved_model_name, model):
     return model
 
 print("Loading Model...")
-model = CTranModel(5, use_lmt, device,'densenet', pos_emb, layers, heads, dropout, no_x_features, grad_cam=True)
-#model = CTranModel(5, use_lmt, device,'vgg16', pos_emb, layers, heads, dropout, no_x_features, grad_cam=True)
+#model = CTranModel(5, use_lmt, device,'densenet', pos_emb, layers, heads, dropout, no_x_features, grad_cam=True)
+model = CTranModel(5, use_lmt, device,'vgg16', pos_emb, layers, heads, dropout, no_x_features, grad_cam=True)
 model = load_saved_model(model_path, model)
 model.eval()
+model.to(device)
 #print(model.self_attn_layers)
 
 print("Preparing...")
@@ -69,16 +67,16 @@ for i in os.listdir("validation"):
         cropped_image = img[x:x+w, y:y+h]
 
         #rgb_img = cv.resize(cropped_image, (600, 600))
-        rgb_img = np.float32(cropped_image) / 255
+        rgb_img = np.float32(cropped_image) / 255.0
         input_tensor = preprocess_image(rgb_img, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         mask_in = torch.zeros(1, 5)
         with torch.no_grad():
-            pred = torch.sigmoid_(model(input_tensor.to(device), mask_in.to(device))).detach().cpu()
-        #print(torch.argmax(pred[0]))
-        if pred[0][torch.argmax(pred[0])]>0.5:
-            #print(torch.argmax(pred[0]))
-            predictions.append(torch.argmax(pred[0]))
-            labels.append(classes[i])
+            pred = model(input_tensor.to(device), mask_in.to(device))
+        prob = F.softmax(pred,dim=1).detach().cpu()
+        prediction   = torch.argmax(prob.tolist()[0])
+        predictions.append(prediction)
+        labels.append(classes[i])
+
 print("")
 print(predictions)
 print(labels)

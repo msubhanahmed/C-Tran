@@ -10,26 +10,23 @@ import cv2 as cv
 
 
 print("Initalizing...")
-num_labels = 5
-use_lmt = False
-device = torch.device('cpu')
-pos_emb = True
+num_labels      = 5
+use_lmt         = False
+device          = torch.device('cpu')
+pos_emb         = False
+layers          = 3
+heads           = 4
+dropout         = 0
+no_x_features   = False
 
-layers = 3
-heads = 4
-dropout = 0
-no_x_features = False
 
-
-model_path = 'saved_models/best_model-vgg600.pt'
-
+model_path      = '/kaggle/input/saved-models/CTran-VGG-P.pt'
 
 def reshape_transform(tensor, height=12, width=12):
     tensor = tensor.transpose(0, 1)
     result = tensor[:, :-num_labels, :].reshape(tensor.size(0),height, width, tensor.size(2))
     result = result.transpose(2, 3).transpose(1, 2)
     return result
-
 
 def load_saved_model(saved_model_name, model):
     checkpoint = torch.load(saved_model_name,map_location=torch.device('cpu'))
@@ -44,9 +41,9 @@ def load_saved_model(saved_model_name, model):
 
 print("Loading Model...")
 model = CTranModel(5, use_lmt, device,'vgg16', pos_emb, layers, heads, dropout, no_x_features, grad_cam=True)
-CTranModel(5,args.use_lmt, device, args.backbone, args.pos_emb,args.layers,args.heads,args.dropout,args.no_x_features)
 model = load_saved_model(model_path, model)
 model.eval()
+model.to(device)
 
 
 app = Flask(__name__)
@@ -60,16 +57,18 @@ def upload_photo():
         if 'photo' not in request.files:
             return jsonify({'error': 'No photo provided'}), 400
 
-        photo = request.files['photo']
-        pil_image = Image.open(photo).resize((224, 224))
-        image_array = np.array(pil_image)
-        rgb_img = np.float32(image_array)/255.0
+        photo        = request.files['photo']
+        pil_image    = Image.open(photo).resize((224, 224))
+        image_array  = np.array(pil_image)
+        rgb_img      = np.float32(image_array)/255.0
         input_tensor = preprocess_image(rgb_img, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        mask_in = torch.zeros(1, 5)
+        mask_in      = torch.zeros(1, 5)
+
         with torch.no_grad():
-            pred = torch.sigmoid_(model(input_tensor.to(device), mask_in.to(device))).detach().cpu()
-        prediction = torch.argmax(pred[0])
-        prediction = int(prediction)
+            pred     = model(input_tensor.to(device), mask_in.to(device))
+        prob         = F.softmax(pred,dim=1).detach().cpu()
+        prediction   = torch.argmax(prob.tolist()[0])
+        prediction   = int(prediction)
         return jsonify({'prediction': classes[prediction]}), 200
     
     except Exception as e:
@@ -77,5 +76,5 @@ def upload_photo():
         return jsonify({'error':"Some Error Occured"}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=False, port=5000)
     #app.run(debug=True, host='0.0.0.0', port=5000)
