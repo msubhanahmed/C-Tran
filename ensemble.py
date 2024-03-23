@@ -19,8 +19,8 @@ heads           = 4
 dropout         = 0
 no_x_features   = False
 
-model_path      = '/kaggle/input/saved-models/CTran-VGG-P.pt'
-data_root       = "/kaggle/input/fyp-dataset-list"
+model_path      = '/kaggle/input/saved-models/CTran-VGG-Best.pt'
+data_root       = "/kaggle/input/fyp-ii-preprocessed"
 
 def reshape_transform(tensor, height=12, width=12):
     tensor = tensor.transpose(0, 1)
@@ -61,7 +61,7 @@ ViTmodel.eval()
 ViTmodel.to(device)
 # ------------------ Dataset Intilization ------------------ #
 img_path    = os.path.join(data_root,      'images')
-labels_path = os.path.join(data_root,   'file_list.csv')
+labels_path = os.path.join(data_root,   'test_file_list.csv')
 data = pd.read_csv(labels_path)
 
 output = []
@@ -70,11 +70,11 @@ for i in data.iterrows():
     print(f"\r Filename: {i[1]['Name']}" , end="")
     pil_image = Image.open(i[1]['Name']).resize((224, 224))
     image_array = np.array(pil_image)
-    rgb_img = np.float32(image_array)/255.0
+    #rgb_img = np.float32(image_array)/255.0
 
     # ------------------ Ctran Inference ------------------ #
 
-    input_tensor = preprocess_image(rgb_img, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    input_tensor = preprocess_image(image_array, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     mask_in = torch.zeros(1, 5)
     with torch.no_grad():
         pred = model(input_tensor.to(device), mask_in.to(device))

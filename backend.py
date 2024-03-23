@@ -6,6 +6,15 @@ from models import CTranModel
 from pytorch_grad_cam.utils.image import preprocess_image
 import torch
 import cv2 as cv
+from skimage.metrics import structural_similarity as ssim
+
+def image_similarity(image1, image2):
+    img1_gray = image1.convert('L')
+    img2_gray = image2.convert('L')
+    img1_array = np.array(img1_gray)
+    img2_array = np.array(img2_gray)
+    similarity = ssim(img1_array, img2_array)    
+    return similarity
 
 
 
