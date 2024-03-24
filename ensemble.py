@@ -70,7 +70,7 @@ for i in data.iterrows():
     print(f"\r Filename: {i[1]['Name']}" , end="")
     pil_image = Image.open(i[1]['Name'].replace("/Dataset", "")).resize((224, 224))
     image_array = np.array(pil_image)
-    #rgb_img = np.float32(image_array)/255.0
+    rgb_img = np.float32(image_array)/255.0
 
     # ------------------ Ctran Inference ------------------ #
 
