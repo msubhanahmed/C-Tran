@@ -83,17 +83,17 @@ for i in data.iterrows():
     # ------------------ ViT Inference ------------------ #
     
     
-    new_root  = "/kaggle/input/fyp-ii-preprocessed/Dataset"
-    new_name  = i[1]['Name'].split("/")[4:]
-    for j in new_name:
-        new_root += "/" + j
-    pil_image = Image.open(new_root).resize((224, 224))
+    # new_root  = "/kaggle/input/fyp-ii-preprocessed"
+    # new_name  = i[1]['Name'].split("/")[3:]
+    # for j in new_name:
+    #     new_root += "/" + j
+    pil_image = Image.open(i[1]['Name'].replace("/Dataset", "")).resize((224, 224))
     input_image = transform(pil_image).unsqueeze(0).to(device)
     with torch.no_grad():
         outputs = ViTmodel(input_image)
     Vprob = F.softmax(outputs.logits,dim=1).detach().cpu()
     output.append({
-        "Filename": new_root,
+        "Filename": i[1]['Name'].replace("/Dataset", ""),
         "C-logits": pred.detach().cpu().tolist()[0],
         "C-prob"  : prob.tolist()[0],
         "V-logits": outputs.logits.detach().cpu().tolist()[0],
