@@ -116,7 +116,7 @@ def get_args(parser,eval=False):
         model_name += '.lmt'
         args.loss_labels = 'unk'
         model_name += '.unk_loss'
-        args.train_known_labels = 100
+        args.train_known_labels = 5
     else:
         args.train_known_labels = 0
 
