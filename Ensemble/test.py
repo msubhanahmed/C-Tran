@@ -21,7 +21,7 @@ for item in data:
     sigmoid_C_logits = torch.sigmoid(c_logits_tensor).numpy()
     mean_arr = np.average([sigmoid_C_logits[::-1], item['V-Probs']], axis=0, weights=[0.5, 0.6])
     #mean_arr = np.average([item['C-prob'][::-1], item['V-Probs']], axis=0,weights=[0.5, 0.5])
-    C_label  = np.argmax(sigmoid_C_logits > 0.5)#np.argmax(item['C-prob'])
+    C_label  = np.argmax(item['C-logits'])#np.argmax(item['C-prob'])
     V_label  = np.argmax(item['V-Probs'])
     CV_label = np.argmax(mean_arr)
     Cpredicted.append(Preference[C_label])
