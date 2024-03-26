@@ -62,10 +62,13 @@ if __name__ == '__main__':
 
         all_preds,all_targs,all_masks,all_ids,test_loss,test_loss_unk = run_epoch(args,model,data_loader,None,1,'Testing', device)
         test_metrics = evaluate.compute_metrics(args,all_preds,all_targs,all_masks, test_loss,test_loss_unk,0,args.test_known_labels, metrics_per_class=True)
+        
         print(test_metrics)
-
         print(len(all_preds))
         print(len(all_targs))
+        softmax = torch.nn.Softmax(dim=1)
+        all_preds = [softmax(pred) for pred in all_preds]
+
         predictions = []
         labels = []
         for i in range(len(all_preds)):
