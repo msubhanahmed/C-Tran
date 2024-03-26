@@ -66,8 +66,7 @@ if __name__ == '__main__':
         print(test_metrics)
         print(len(all_preds))
         print(len(all_targs))
-        softmax = torch.nn.Softmax(dim=1)
-        all_preds = [softmax(pred) for pred in all_preds]
+        all_preds = [torch.nn.Softmax(pred, dim=1) for pred in all_preds]
 
         predictions = []
         labels = []
