@@ -72,16 +72,13 @@ def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_sch
         all_image_ids += batch['imageIDs']
         mask_in = mask.clone()
         for i in range(len(images)):
-            unique_id = uuid.uuid4()
-            image = TF.to_pil_image(images[i])
-            image_filename = f"{labels[i]}_{unique_id}.png"
+            unique_id           = uuid.uuid4()
+            image               = TF.to_pil_image(images[i])
+            image_filename      = f"{labels[i]}_{unique_id}.png"
             image.save(os.path.join(output_folder, image_filename))
-            mask_filename = f"{labels[i]}_{unique_id}_mask.png"
-            mask_image = Image.fromarray((mask[i] * 255).numpy().astype('uint8'), mode='L')
-            mask_image.save(os.path.join(output_folder, mask_filename))
             with open(csv_file, mode, newline='') as csvfile:
                 writer = csv.writer(csvfile)
-                writer.writerow([image_filename, labels[i], mask_filename])
+                writer.writerow([image_filename, labels[i], mask_in[i]])
 
 
         if train:
