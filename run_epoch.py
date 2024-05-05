@@ -5,7 +5,12 @@ from pdb import set_trace as stop
 from tqdm import tqdm
 from models.utils import custom_replace
 import random
-
+import os
+import csv
+import uuid
+import torch
+import torchvision.transforms.functional as TF
+from PIL import Image
 from utils.poly_loss import BCEPolyLoss, FLPolyLoss
 
 
@@ -17,6 +22,16 @@ def get_class_weights(y_true):
 
 
 def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_scheduler=None):
+
+    output_folder = "saved_images"
+    os.makedirs(output_folder, exist_ok=True)
+    csv_file = "image_labels.csv"
+    mode = 'a' if os.path.exists(csv_file) else 'w'
+    with open(csv_file, mode, newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        if mode == 'w':
+            writer.writerow(['image_filename', 'label', 'mask_filename'])
+
     if train:
         model.train()
         optimizer.zero_grad()
@@ -55,14 +70,26 @@ def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_sch
         mask = batch['mask'].float()
         unk_mask = custom_replace(mask,1,0,0)
         all_image_ids += batch['imageIDs']
-        
         mask_in = mask.clone()
-        
+        for i in range(len(images)):
+            unique_id = uuid.uuid4()
+            image = TF.to_pil_image(images[i])
+            image_filename = f"{labels[i]}_{unique_id}.png"
+            image.save(os.path.join(output_folder, image_filename))
+            mask_filename = f"{labels[i]}_{unique_id}_mask.png"
+            mask_image = Image.fromarray((mask[i] * 255).numpy().astype('uint8'), mode='L')
+            mask_image.save(os.path.join(output_folder, mask_filename))
+            writer.writerow([image_filename, labels[i], mask_filename])
+
+            
         if train:
             pred,int_pred,attns = model(images.to(device),mask_in.to(device))
         else:
             with torch.no_grad():
                 pred,int_pred,attns = model(images.to(device),mask_in.to(device))
+
+
+        
         if args.dataset == 'cub':
             class_label = batch['class_label'].float()
             concept_certainty = batch['concept_certainty'].float()
