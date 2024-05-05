@@ -79,9 +79,11 @@ def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_sch
             mask_filename = f"{labels[i]}_{unique_id}_mask.png"
             mask_image = Image.fromarray((mask[i] * 255).numpy().astype('uint8'), mode='L')
             mask_image.save(os.path.join(output_folder, mask_filename))
-            writer.writerow([image_filename, labels[i], mask_filename])
+            with open(csv_file, mode, newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow([image_filename, labels[i], mask_filename])
 
-            
+
         if train:
             pred,int_pred,attns = model(images.to(device),mask_in.to(device))
         else:
