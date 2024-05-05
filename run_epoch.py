@@ -22,16 +22,6 @@ def get_class_weights(y_true):
 
 
 def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_scheduler=None):
-
-    output_folder = "saved_images"
-    os.makedirs(output_folder, exist_ok=True)
-    csv_file = "image_labels.csv"
-    mode = 'a' if os.path.exists(csv_file) else 'w'
-    with open(csv_file, mode, newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        if mode == 'w':
-            writer.writerow(['image_filename', 'label', 'mask_filename'])
-
     if train:
         model.train()
         optimizer.zero_grad()
@@ -67,8 +57,8 @@ def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_sch
     mode = 'a' if os.path.exists(csv_file) else 'w'
     with open(csv_file, mode, newline='') as csvfile:
         writer = csv.writer(csvfile)
-    if mode == 'w':
-        writer.writerow(['image_filename', 'label', 'mask_filename', 'prediction'])
+        if mode == 'w':
+            writer.writerow(['image_filename', 'label', 'mask_filename', 'prediction'])
             
     for batch in tqdm(data,mininterval=0.5,desc=desc,leave=False,ncols=50):
         if batch_idx == max_samples:
