@@ -82,7 +82,7 @@ def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_sch
             image               = TF.to_pil_image(images[i])
             image_filename      = f"{labels[i]}_{unique_id}.png"
             image.save(os.path.join(output_folder, image_filename))
-            with open(csv_file, mode, newline='') as csvfile:
+            with open(csv_file, 'a') as csvfile:
                 writer = csv.writer(csvfile)
                 prediction = pred[i].tolist()
                 # prediction = ','.join(map(str, pred[i].tolist()))  # Convert tensor to string
