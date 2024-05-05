@@ -61,6 +61,15 @@ def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_sch
     elif args.loss == 'fl_poly':
         criterion = FLPolyLoss(eps=args.poly_eps, gamma=args.poly_gamma)
 
+    output_folder = "saved_images"
+    os.makedirs(output_folder, exist_ok=True)
+    csv_file = "image_labels_predictions.csv"
+    mode = 'a' if os.path.exists(csv_file) else 'w'
+    with open(csv_file, mode, newline='') as csvfile:
+        writer = csv.writer(csvfile)
+    if mode == 'w':
+        writer.writerow(['image_filename', 'label', 'mask_filename', 'prediction'])
+            
     for batch in tqdm(data,mininterval=0.5,desc=desc,leave=False,ncols=50):
         if batch_idx == max_samples:
             break
@@ -71,6 +80,13 @@ def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_sch
         unk_mask = custom_replace(mask,1,0,0)
         all_image_ids += batch['imageIDs']
         mask_in = mask.clone()
+
+        if train:
+            pred,int_pred,attns = model(images.to(device),mask_in.to(device))
+        else:
+            with torch.no_grad():
+                pred,int_pred,attns = model(images.to(device),mask_in.to(device))
+
         for i in range(len(images)):
             unique_id           = uuid.uuid4()
             image               = TF.to_pil_image(images[i])
@@ -78,14 +94,10 @@ def run_epoch(args,model,data,optimizer,epoch,desc,device,train=False,warmup_sch
             image.save(os.path.join(output_folder, image_filename))
             with open(csv_file, mode, newline='') as csvfile:
                 writer = csv.writer(csvfile)
-                writer.writerow([image_filename, labels[i], mask_in[i]])
+                prediction = pred[i].tolist()
+                # prediction = ','.join(map(str, pred[i].tolist()))  # Convert tensor to string
+                writer.writerow([image_filename, labels[i], mask_in[i], prediction])
 
-
-        if train:
-            pred,int_pred,attns = model(images.to(device),mask_in.to(device))
-        else:
-            with torch.no_grad():
-                pred,int_pred,attns = model(images.to(device),mask_in.to(device))
 
 
         

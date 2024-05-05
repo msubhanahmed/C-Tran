@@ -71,7 +71,7 @@ if __name__ == '__main__':
         predictions = []
         labels = []
         for i in range(len(all_preds)):
-            print(all_preds[i],all_targs[i])
+            #print(all_preds[i],all_targs[i])
             predictions.append(torch.argmax(all_preds[i]))
             labels.append(torch.argmax(all_targs[i]))
 
